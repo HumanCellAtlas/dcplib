@@ -56,11 +56,8 @@ class TestMediaType(unittest.TestCase):
     BUNDLE_FIXTURE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), 'fixtures'))
 
     TEST_FILES_AND_STRINGS = {
-        'assay.json': 'application/json; dcp-type="metadata/assay"',
-        'project.json': 'application/json; dcp-type="metadata/project"',
-        'sample.json': 'application/json; dcp-type="metadata/sample"',
-        'manifest.json': 'application/json; dcp-type=metadata',
-        'SRR2963332_1.fastq.gz': 'application/gzip; dcp-type=data',
+        'assay.json': 'application/json',
+        'SRR2963332_1.fastq.gz': 'application/gzip'
     }
 
     def test_file_recognition(self):

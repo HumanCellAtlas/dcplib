@@ -1,13 +1,11 @@
 import operator
-import os
 import re
 
 import puremagic
 
 
-class MediaType:
+class MediaType(object):
 
-    DCP_METADATA_JSON_FILES = ('assay', 'project', 'sample')
     RFC7320_TOKEN_CHARSET = r"!#$%&'*+\-.^_`|~\w"
     _TYPE_REGEX = re.compile(
         r"(?P<top_level_type>.+)"  # 'application'
@@ -49,13 +47,9 @@ class MediaType:
             suffix=type_info.group('suffix'), parameters=parameters)
 
     @classmethod
-    def from_file(cls, file_path, dcp_type=None):
+    def from_file(cls, file_path):
         media_type_string = cls._media_type_of_file(file_path)
         media_type = cls.from_string(media_type_string)
-        if dcp_type:
-            media_type.parameters['dcp-type'] = dcp_type
-        else:
-            media_type.parameters['dcp-type'] = cls._dcp_media_type_param(media_type, os.path.basename(file_path))
         return media_type
 
     def __init__(self, top_level_type, subtype, suffix=None, parameters={}):
@@ -109,17 +103,6 @@ class MediaType:
         elif media_type == 'application/x-gzip':  # deprecated
             media_type = 'application/gzip'
         return media_type
-
-    @staticmethod
-    def _dcp_media_type_param(media_type, filename):
-        if media_type.main_type == 'application/json':
-            (filename_without_extension, ext) = os.path.splitext(filename)
-            if filename_without_extension in MediaType.DCP_METADATA_JSON_FILES:
-                return "metadata/{filename}".format(filename=filename_without_extension)
-            else:
-                return "metadata"
-        else:
-            return "data"
 
     @staticmethod
     def _minimally_quoted_parameter_value(value):
