@@ -14,6 +14,8 @@ class TestDcpMediaType(unittest.TestCase):
         'sample.json': 'application/json; dcp-type="metadata/sample"',
         'manifest.json': 'application/json; dcp-type=metadata',
         'SRR2963332_1.fastq.gz': 'application/gzip; dcp-type=data',
+        'demo.gene.counts.txt': 'text/plain; dcp-type=data',
+        'mystery_file': 'application/octet-stream; dcp-type=data'
     }
 
     def test_file_recognition(self):

@@ -1,3 +1,4 @@
+import mimetypes
 import operator
 import re
 
@@ -90,18 +91,27 @@ class MediaType(object):
 
     @staticmethod
     def _media_type_of_file(file_path):
-        """
-        Use puremagic to generate a media-type for the file, then correct its mistakes.
-        """
-        types = puremagic.magic_file(file_path)
+        return MediaType._puremagic_media_type_of_file(file_path) or \
+            MediaType._mimetypes_media_type_of_file(file_path) or \
+            "application/octet-stream"
+
+    @staticmethod
+    def _puremagic_media_type_of_file(file_path):
+        array_of_type_arrays = puremagic.magic_file(file_path)
+        types = list(map(lambda x: x[1], array_of_type_arrays))
+        types = list(filter(lambda x: x and x != '', types))
         if len(types) == 0:
-            return 'application/octet-stream'
-        media_type = types[0][1]
+            return None
+        media_type = types[0]
         if media_type == 'application/x-ipynb+json':  # All JSON files are not Jupiter notebooks
-            if file_path.endswith('.json'):
-                media_type = 'application/json'
+            media_type = 'application/json'
         elif media_type == 'application/x-gzip':  # deprecated
             media_type = 'application/gzip'
+        return media_type
+
+    @staticmethod
+    def _mimetypes_media_type_of_file(file_path):
+        media_type, encoding = mimetypes.guess_type(file_path)
         return media_type
 
     @staticmethod

@@ -57,7 +57,9 @@ class TestMediaType(unittest.TestCase):
 
     TEST_FILES_AND_STRINGS = {
         'assay.json': 'application/json',
-        'SRR2963332_1.fastq.gz': 'application/gzip'
+        'SRR2963332_1.fastq.gz': 'application/gzip',
+        'demo.gene.counts.txt': 'text/plain',
+        'mystery_file': 'application/octet-stream'
     }
 
     def test_file_recognition(self):
