@@ -9,3 +9,5 @@ lint:
 tests:
 	PYTHONWARNINGS=ignore:ResourceWarning coverage run --source=dcplib \
 		-m unittest discover --start-directory tests --top-level-directory . --verbose
+
+include common.mk
