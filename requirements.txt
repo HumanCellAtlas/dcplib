@@ -1,2 +1,3 @@
 # media_types dependencies
 puremagic
+crcmod==1.7
