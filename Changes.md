@@ -1,3 +1,6 @@
+# Changes for v1.1.0 (2018-02-07)
+Fold checksumming_io into dcplib.
+
 # Changes for v1.0.1 (2017-11-10)
 Retry.
 
