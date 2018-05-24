@@ -8,7 +8,7 @@ class Config:
 
     """
     This Config class stores its configuration in an AwsSecret.
-    Subclass it to create your config, as follows:
+    Subclass it to create your config, as follows (Python 3.6):
 
       class MyComponentConfig(Config):
 
@@ -34,13 +34,13 @@ class Config:
     def __new__(cls, *args, **kwargs):
         if not hasattr(cls, '_config'):
             cls.reset()
-        return super().__new__(cls)
+        return super(Config, cls).__new__(cls)
 
     """
     If source is specified, it must be the path to a JSON file
     """
     def __init__(self, component_name, deployment=None, source=None):
-        super().__init__()
+        super(Config, self).__init__()
         self._component_name = component_name
         self._deployment = deployment or os.environ['DEPLOYMENT_STAGE']
         self._source = self._determine_source(source)
@@ -83,7 +83,8 @@ class Config:
         return self.config is not None
 
     def load_from_aws(self):
-        secret_path = f"dcp/{self._component_name}/{self._deployment}/secrets"
+        secret_path = "dcp/{component_name}/{deployment}/secrets".format(
+            component_name=self._component_name, deployment=self._deployment)
         secret = AwsSecret(secret_path)
         self.from_json(secret.value)
 
@@ -105,17 +106,15 @@ class Config:
 
     def value_from_config(self, name):
         if name in self.config:
-            # logger.debug(f"From config, {name} is {self.config[name]}")
             return self.config[name]
         else:
             return None
 
     def value_from_env(self, name):
         if self.__class__.use_env and name.upper() in os.environ:
-            # logger.debug(f"from env, {name} is in {os.environ[name.upper()]}")
             return os.environ[name.upper()]
         else:
             return None
 
     def raise_error(self, name):
-        raise RuntimeError(f"{name} is not in configuration")
+        raise RuntimeError(name + " is not in configuration")

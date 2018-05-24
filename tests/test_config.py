@@ -1,5 +1,9 @@
+import sys
 import unittest
-from unittest.mock import PropertyMock, patch
+try:
+    from unittest.mock import PropertyMock, patch
+except ImportError:
+    from mock import patch
 
 from . import EnvironmentSetup, fixture_file_path
 
@@ -9,20 +13,19 @@ from dcplib.config import Config
 
 class BogoComponentConfig(Config):
     def __init__(self, *args, **kwargs):
-        super().__init__('bogo_component', **kwargs)
+        super(BogoComponentConfig, self).__init__('bogo_component', **kwargs)
 
 
+@unittest.skipIf(sys.version_info < (3, 6), "Only testing under Python 3.6+")
 class TestConfig(unittest.TestCase):
 
     def setUp(self):
         self.aws_secret = AwsSecret(name="dcp/bogo_component/bogo-env/secrets")
         self.aws_secret.update('{"secret1":"secret1_from_cloud"}')
         BogoComponentConfig.reset()
-        super().setUp()
 
     def tearDown(self):
         self.aws_secret.delete()
-        super().tearDown()
 
     def test_from_file(self):
         with EnvironmentSetup({

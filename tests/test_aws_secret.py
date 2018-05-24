@@ -1,3 +1,4 @@
+import sys
 import unittest
 
 import boto3
@@ -7,6 +8,7 @@ from botocore.errorfactory import ClientError
 from dcplib.aws_secret import AwsSecret
 
 
+@unittest.skipIf(sys.version_info < (3, 6), "Only testing under Python 3.6+")
 class TestAwsSecret(unittest.TestCase):
 
     UNKNOWN_SECRET = 'dcp/test/secret_that_does_not_exist'  # Don't ever create this
@@ -14,7 +16,6 @@ class TestAwsSecret(unittest.TestCase):
     EXISTING_SECRET_VALUE = '{"top":"secret"}'
 
     def setUp(self):
-        super().setUp()
         self.secrets_mgr = boto3.client("secretsmanager")
 
         # Create an active (non-deleted) secret.
@@ -38,7 +39,6 @@ class TestAwsSecret(unittest.TestCase):
                                               SecretString=self.EXISTING_SECRET_VALUE)
 
     def tearDown(self):
-        super().tearDown()
         self.secrets_mgr.delete_secret(SecretId=self.secret_arn)
 
     def test_init_of_unknown_secret_does_not_set_secret_metadata(self):
