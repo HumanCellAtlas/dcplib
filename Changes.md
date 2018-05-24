@@ -1,3 +1,6 @@
+# Changes for v1.2.1 (2018-05-24)
+Python 2.7 compatiility
+
 # Changes for v1.2.0 (2018-05-24)
 Add Config and AwsSecret classes
 
