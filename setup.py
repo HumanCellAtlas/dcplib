@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 install_requires = [line.rstrip() for line in open(os.path.join(os.path.dirname(__file__), "requirements.txt"))]
 
 setup(name='dcplib',
-      version='1.3.0',
+      version='1.3.1',
       description='Modules shared among multiple Data Coordination Platform components.',
       url='http://github.com/HumanCellAtlas/dcplib',
       author='Sam Pierson',

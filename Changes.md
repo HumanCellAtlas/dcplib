@@ -1,3 +1,6 @@
+# Changes for v1.3.1 (2018-07-31)
+Add s3_multipart.MULTIPART_THRESHOLD and tests for get_s3_multipart_chunk_size()
+
 # Changes for v1.3.0 (2018-07-31)
 Add get_s3_multipart_chunk_size method
 
