@@ -9,7 +9,7 @@ class AwsSecret:
 
     Usage:
         secret = AwsSecret(name="my/component/secret")
-        secret.update(value='{"foo":"bar"}'
+        secret.update(value='{"foo":"bar"}')
         secret.value
         # -> '{"foo":"bar"}'
         secret.delete()
