@@ -1,3 +1,6 @@
+# Changes for v1.3.0 (2018-07-31)
+Add get_s3_multipart_chunk_size method
+
 # Changes for v1.2.1 (2018-05-24)
 Python 2.7 compatiility
 
