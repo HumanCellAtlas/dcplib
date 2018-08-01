@@ -11,10 +11,6 @@ AWS_MAX_MULTIPART_COUNT = 10000
 """Maximum number of parts allowed in a multipart upload.  This is a limitation imposed by S3."""
 
 
-def s3_multipart_threshold():
-    return
-
-
 def get_s3_multipart_chunk_size(filesize):
     """Returns the chunk size of the S3 multipart object, given a file's size."""
     if filesize <= AWS_MAX_MULTIPART_COUNT * AWS_MIN_CHUNK_SIZE:
