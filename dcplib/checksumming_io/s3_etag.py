@@ -7,17 +7,21 @@ with the same interface as the hashlib generators.
 
 
 class S3Etag:
-    etag_stride = 64 * 1024 * 1024
 
-    def __init__(self):
+    def __init__(self, chunk_size):
         self._etag_bytes = 0
         self._etag_parts = []
         self._etag_hasher = hashlib.md5()
+        self._chunk_size = chunk_size
+
+    @property
+    def chunk_size(self):
+        return self._chunk_size
 
     def update(self, chunk):
-        if self._etag_bytes + len(chunk) > self.etag_stride:
-            chunk_head = chunk[:self.etag_stride - self._etag_bytes]
-            chunk_tail = chunk[self.etag_stride - self._etag_bytes:]
+        if self._etag_bytes + len(chunk) > self.chunk_size:
+            chunk_head = chunk[:self.chunk_size - self._etag_bytes]
+            chunk_tail = chunk[self.chunk_size - self._etag_bytes:]
             self._etag_hasher.update(chunk_head)
             self._etag_parts.append(self._etag_hasher.digest())
             self._etag_hasher = hashlib.md5()

@@ -1,3 +1,7 @@
+# Changes for v1.3.2 (2018-08-01)
+* S3Etag is now optionally configured with chunk size
+* ChecksummingBufferedReader is now optionally configured with chunk size
+
 # Changes for v1.3.1 (2018-07-31)
 Add s3_multipart.MULTIPART_THRESHOLD and tests for get_s3_multipart_chunk_size()
 

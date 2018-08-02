@@ -1,17 +1,24 @@
 import hashlib
-import crcmod
+
 from io import BufferedReader
+
+import crcmod
+
 from .s3_etag import S3Etag
 
 
 class ChecksummingBufferedReader:
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, file_handler, read_chunk_size, *args, **kwargs):
+        """
+        :param file_handler: the file handler to read from
+        :param read_file_size: file size for correctly setting the s3 etag chunk size
+        """
         self._hashers = dict(crc32c=crcmod.predefined.Crc("crc-32c"),
                              sha1=hashlib.sha1(),
                              sha256=hashlib.sha256(),
-                             s3_etag=S3Etag())
-        self._reader = BufferedReader(*args, **kwargs)
+                             s3_etag=S3Etag(read_chunk_size))
+        self._reader = BufferedReader(file_handler, *args, **kwargs)
         self.raw = self._reader.raw
 
     def read(self, size=None):
