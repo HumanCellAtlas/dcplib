@@ -1,3 +1,6 @@
+# Changes for v1.4.0 (2018-08-15)
+Config: allow customization of secret name
+
 # Changes for v1.3.2 (2018-08-01)
 * S3Etag is now optionally configured with chunk size
 * ChecksummingBufferedReader is now optionally configured with chunk size
