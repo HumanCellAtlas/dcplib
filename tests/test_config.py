@@ -41,6 +41,21 @@ class TestConfig(unittest.TestCase):
             config = BogoComponentConfig(deployment='bogo-env', source='aws')
             self.assertEqual('secret1_from_cloud', config.secret1)
 
+    def test_custom_secret_name(self):
+        custom_named_secret = AwsSecret(name="dcp/bogo_component/bogo-env/custom-secret-name")
+        custom_named_secret.update('{"secret1":"custom"}')
+
+        class BogoComponentCustomConfig(Config):
+            def __init__(self, *args, **kwargs):
+                # kwargs['secret_name'] = 'custom-secret-name'
+                super(BogoComponentCustomConfig, self).__init__(
+                    'bogo_component', secret_name='custom-secret-name', **kwargs)
+
+        config = BogoComponentCustomConfig(deployment='bogo-env', source='aws')
+        self.assertEqual('custom', config.secret1)
+
+        custom_named_secret.delete()
+
     @patch('dcplib.config.AwsSecret')
     def test_singletonness(self, mock_AwsSecret):
         value_mock = PropertyMock(return_value='{"secret2": "foo"}')
