@@ -1,4 +1,9 @@
-import threading, logging
+import logging
+
+try:
+    from threading import get_ident
+except ImportError:
+    from thread import get_ident
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -27,13 +32,13 @@ class HTTPRequest:
         self.sessions = {}
 
     def __call__(self, *args, **kwargs):
-        if threading.get_ident() not in self.sessions:
+        if get_ident() not in self.sessions:
             session = requests.Session()
             adapter = HTTPAdapter(max_retries=self.retry_policy)
             session.mount('http://', adapter)
             session.mount('https://', adapter)
-            self.sessions[threading.get_ident()] = session
-        return self.sessions[threading.get_ident()].request(*args, timeout=self.timeout_policy, **kwargs)
+            self.sessions[get_ident()] = session
+        return self.sessions[get_ident()].request(*args, timeout=self.timeout_policy, **kwargs)
 
     def head(self, url, *args, **kwargs):
         return self(url=url, method="HEAD", *args, **kwargs)
