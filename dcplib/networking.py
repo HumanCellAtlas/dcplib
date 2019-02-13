@@ -22,6 +22,14 @@ class RetryPolicy(retry.Retry):
         return retry
 
 class HTTPRequest:
+    """
+    A requests wrapper preconfigured with best practice timeout and retry policies and per-thread session tracking.
+
+    The timeout and retry policies are configured to turn on exponential backoff support provided by urllib3, and to
+    make the client resistant to both network issues and intermittent server-side errors.
+
+    The per-thread session tracking is to avoid many threads sharing the same session in multithreaded environments.
+    """
     retry_policy = RetryPolicy(read=4,
                                status=4,
                                backoff_factor=0.1,
