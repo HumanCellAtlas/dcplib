@@ -9,6 +9,12 @@ TODO:
 - filename globs
 - s3 bucket to save cache tar to after
 - whether to pass directory path, filehandles or file contents
+-callback at the end of the extract
+- file contents as json vs. directory vs. filehandles
+
+- bundle consumer protocol needs updating (get_file returns nothing)
+  - group file futures into arrays and iterate over results
+
 """
 
 import os, sys, json, concurrent.futures, hashlib, logging, threading
@@ -23,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 class DSSExtractor:
     default_bundle_query = {'query': {'bool': {'must_not': {'term': {'admin_deleted': True}}}}}
-    default_content_type_pattern = 'application/json; dcp-type="metadata*"'
+    default_content_type_patterns = ['application/json; dcp-type="metadata*"']
 
     def __init__(self):
         self.dss_host = hca.dss.DSSClient().host
@@ -41,14 +47,14 @@ class DSSExtractor:
             sys.stdout.write(".")
             sys.stdout.flush()
 
-    def get_files_to_fetch_for_bundle(self, bundle_uuid, bundle_version):
+    def get_files_to_fetch_for_bundle(self, bundle_uuid, bundle_version, content_type_patterns):
         logger.debug("[%s] Fetching manifest for bundle %s", threading.current_thread().getName(), bundle_uuid)
         res = http.get(f"{self.dss_host}/bundles/{bundle_uuid}", params={"replica": "aws"})
         res.raise_for_status()
         logger.debug("Scanning bundle %s", bundle_uuid)
         files_to_fetch = []
         for f in res.json()["bundle"]["files"]:
-            if f["content-type"].startswith('application/json; dcp-type="metadata'):
+            if any(fnmatchcase(f["content-type"], p) for p in content_type_patterns):
                 os.makedirs(f"bundles/{bundle_uuid}.{bundle_version}", exist_ok=True)
                 try:
                     with open(f"files/{f['uuid']}", "rb") as fh:
@@ -67,12 +73,12 @@ class DSSExtractor:
         return bundle_uuid, bundle_version, files_to_fetch
 
     def extract(self, query: dict = None, transformer: callable = None, loader: callable = None,
-                staging_directory: str = None, content_type_pattern=None, filename_pattern=None,
+                staging_directory: str = None, content_type_patterns=None, filename_patterns=None,
                 max_workers=512):
         if query is None:
             query = self.default_bundle_query
-        if content_type_pattern is None:
-            content_type_pattern = self.default_content_type_pattern
+        if content_type_patterns is None:
+            content_type_patterns = self.default_content_type_patterns
         if staging_directory is None:
             staging_directory = "."
         os.chdir(staging_directory)
@@ -86,7 +92,8 @@ class DSSExtractor:
             logging.info("Scanning %s bundles", total_bundles)
             for b in dss.post_search.iterate(es_query=query, replica="aws", per_page=500):
                 bundle_uuid, bundle_version = b["bundle_fqid"].split(".", 1)
-                f2f_futures.append(executor.submit(self.get_files_to_fetch_for_bundle, bundle_uuid, bundle_version))
+                f2f_futures.append(executor.submit(self.get_files_to_fetch_for_bundle,
+                                                   bundle_uuid, bundle_version, content_type_patterns))
 
                 if len(f2f_futures) > max_workers * 2:
                     logger.info("[%d%%] [%d/%d] Processing bundle batch",
