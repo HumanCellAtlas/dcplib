@@ -3,18 +3,6 @@ Shared ETL (extract, transform, load) code for fetching and loading data from HC
 
 The main entry point is the extract() function, which takes optional transform and load callbacks that will be invoked
 for each bundle fetched.
-
-TODO:
-- content-type globs
-- filename globs
-- s3 bucket to save cache tar to after
-- whether to pass directory path, filehandles or file contents
--callback at the end of the extract
-- file contents as json vs. directory vs. filehandles
-
-- bundle consumer protocol needs updating (get_file returns nothing)
-  - group file futures into arrays and iterate over results
-
 """
 
 import os, sys, json, concurrent.futures, hashlib, logging, threading
