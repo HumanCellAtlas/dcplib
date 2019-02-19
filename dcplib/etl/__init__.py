@@ -20,11 +20,13 @@ class DSSExtractor:
     default_bundle_query = {'query': {'bool': {'must_not': {'term': {'admin_deleted': True}}}}}
     default_content_type_patterns = ['application/json; dcp-type="metadata*"']
 
-    def __init__(self, staging_directory):
-        self.dss_host = hca.dss.DSSClient().host
-        self.b2f = defaultdict(set)
+    def __init__(self, staging_directory, content_type_patterns: list = None, filename_patterns: list = None):
         self.sd = staging_directory
+        self.content_type_patterns = content_type_patterns or self.default_content_type_patterns
+        self.filename_patterns = filename_patterns or []
+        self.b2f = defaultdict(set)
         self.staged_bundles = []
+        self.dss_host = hca.dss.DSSClient().host
 
     def get_file(self, f, bundle_uuid, bundle_version, print_progress=True):
         logger.debug("[%s] Fetching %s:%s", threading.current_thread().getName(), bundle_uuid, f["name"])
@@ -40,14 +42,21 @@ class DSSExtractor:
             sys.stdout.flush()
         return f, bundle_uuid, bundle_version
 
-    def get_files_to_fetch_for_bundle(self, bundle_uuid, bundle_version, content_type_patterns):
+    def should_fetch_file(self, f):
+        if any(fnmatchcase(f["content-type"], p) for p in self.content_type_patterns):
+            return True
+        if any(fnmatchcase(f["name"], p) for p in self.filename_patterns):
+            return True
+        return False
+
+    def get_files_to_fetch_for_bundle(self, bundle_uuid, bundle_version):
         logger.debug("[%s] Fetching manifest for bundle %s", threading.current_thread().getName(), bundle_uuid)
         res = http.get(f"{self.dss_host}/bundles/{bundle_uuid}", params={"replica": "aws"})
         res.raise_for_status()
         logger.debug("Scanning bundle %s", bundle_uuid)
         files_to_fetch = []
         for f in res.json()["bundle"]["files"]:
-            if any(fnmatchcase(f["content-type"], p) for p in content_type_patterns):
+            if self.should_fetch_file(f):
                 os.makedirs(f"{self.sd}/bundles/{bundle_uuid}.{bundle_version}", exist_ok=True)
                 try:
                     with open(f"{self.sd}/files/{f['uuid']}", "rb") as fh:
@@ -81,12 +90,9 @@ class DSSExtractor:
                 self.staged_bundles.append([bundle_uuid, bundle_version])
         return len(f2f_futures)
 
-    def extract(self, query: dict = None, transformer: callable = None, loader: callable = None,
-                content_type_patterns=None, filename_patterns=None, max_workers=512):
+    def extract(self, query: dict = None, transformer: callable = None, loader: callable = None, max_workers=512):
         if query is None:
             query = self.default_bundle_query
-        if content_type_patterns is None:
-            content_type_patterns = self.default_content_type_patterns
         os.makedirs("files", exist_ok=True)
         os.makedirs("bundles", exist_ok=True)
         f2f_futures, ff_futures = [], []
@@ -97,9 +103,7 @@ class DSSExtractor:
             logging.info("Scanning %s bundles", total_bundles)
             for b in dss.post_search.iterate(es_query=query, replica="aws", per_page=500):
                 bundle_uuid, bundle_version = b["bundle_fqid"].split(".", 1)
-                f2f_futures.append(executor.submit(self.get_files_to_fetch_for_bundle,
-                                                   bundle_uuid, bundle_version, content_type_patterns))
-
+                f2f_futures.append(executor.submit(self.get_files_to_fetch_for_bundle, bundle_uuid, bundle_version))
                 if len(f2f_futures) > max_workers * 2:
                     bundles_complete += self.enqueue_bundle_manifests(percent_complete, bundles_complete, total_bundles,
                                                                       f2f_futures, ff_futures, executor)
