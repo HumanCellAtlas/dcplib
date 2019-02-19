@@ -20,17 +20,18 @@ class DSSExtractor:
     default_bundle_query = {'query': {'bool': {'must_not': {'term': {'admin_deleted': True}}}}}
     default_content_type_patterns = ['application/json; dcp-type="metadata*"']
 
-    def __init__(self, staging_directory, content_type_patterns: list = None, filename_patterns: list = None):
+    def __init__(self, staging_directory, content_type_patterns: list = None, filename_patterns: list = None,
+                 dss_client: hca.dss.DSSClient = None):
         self.sd = staging_directory
         self.content_type_patterns = content_type_patterns or self.default_content_type_patterns
         self.filename_patterns = filename_patterns or []
         self.b2f = defaultdict(set)
         self.staged_bundles = []
-        self.dss_host = hca.dss.DSSClient().host
+        self.dss_client = dss_client or hca.dss.DSSClient()
 
     def get_file(self, f, bundle_uuid, bundle_version, print_progress=True):
         logger.debug("[%s] Fetching %s:%s", threading.current_thread().getName(), bundle_uuid, f["name"])
-        res = http.get(f"{self.dss_host}/files/{f['uuid']}", params={"replica": "aws", "version": f["version"]})
+        res = http.get(f"{self.dss_client.host}/files/{f['uuid']}", params={"replica": "aws", "version": f["version"]})
         res.raise_for_status()
         with open(f"{self.sd}/files/{f['uuid']}", "wb") as fh:
             fh.write(res.content)
@@ -51,7 +52,7 @@ class DSSExtractor:
 
     def get_files_to_fetch_for_bundle(self, bundle_uuid, bundle_version):
         logger.debug("[%s] Fetching manifest for bundle %s", threading.current_thread().getName(), bundle_uuid)
-        res = http.get(f"{self.dss_host}/bundles/{bundle_uuid}", params={"replica": "aws"})
+        res = http.get(f"{self.dss_client.host}/bundles/{bundle_uuid}", params={"replica": "aws"})
         res.raise_for_status()
         logger.debug("Scanning bundle %s", bundle_uuid)
         files_to_fetch = []
@@ -98,10 +99,9 @@ class DSSExtractor:
         f2f_futures, ff_futures = [], []
         bundles_complete, percent_complete = 0, -1
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            dss = hca.dss.DSSClient(swagger_url=f"{self.dss_host}/swagger.json")
-            total_bundles = dss.post_search(es_query=query, replica="aws")["total_hits"]
+            total_bundles = self.dss_client.post_search(es_query=query, replica="aws")["total_hits"]
             logging.info("Scanning %s bundles", total_bundles)
-            for b in dss.post_search.iterate(es_query=query, replica="aws", per_page=500):
+            for b in self.dss_client.post_search.iterate(es_query=query, replica="aws", per_page=500):
                 bundle_uuid, bundle_version = b["bundle_fqid"].split(".", 1)
                 f2f_futures.append(executor.submit(self.get_files_to_fetch_for_bundle, bundle_uuid, bundle_version))
                 if len(f2f_futures) > max_workers * 2:
