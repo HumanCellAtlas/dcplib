@@ -29,14 +29,18 @@ class DSSExtractor:
         self.staged_bundles = []
         self.dss_client = dss_client or hca.dss.DSSClient()
 
+    def link_file(self, bundle_uuid, bundle_version, f):
+        if not os.path.exists(f"{self.sd}/bundles/{bundle_uuid}.{bundle_version}/{f['name']}"):
+            logger.debug("Linking fetched file %s/%s", bundle_uuid, f["name"])
+            os.symlink(f"../../files/{f['uuid']}", f"{self.sd}/bundles/{bundle_uuid}.{bundle_version}/{f['name']}")
+
     def get_file(self, f, bundle_uuid, bundle_version, print_progress=True):
         logger.debug("[%s] Fetching %s:%s", threading.current_thread().getName(), bundle_uuid, f["name"])
         res = http.get(f"{self.dss_client.host}/files/{f['uuid']}", params={"replica": "aws", "version": f["version"]})
         res.raise_for_status()
         with open(f"{self.sd}/files/{f['uuid']}", "wb") as fh:
             fh.write(res.content)
-        if not os.path.exists(f"{self.sd}/bundles/{bundle_uuid}.{bundle_version}/{f['name']}"):
-            os.symlink(f"../../files/{f['uuid']}", f"{self.sd}/bundles/{bundle_uuid}.{bundle_version}/{f['name']}")
+        self.link_file(bundle_uuid, bundle_version, f)
         logger.debug("Wrote %s:%s", bundle_uuid, f["name"])
         if print_progress:
             sys.stdout.write(".")
@@ -63,10 +67,7 @@ class DSSExtractor:
                     with open(f"{self.sd}/files/{f['uuid']}", "rb") as fh:
                         file_csum = hashlib.sha256(fh.read()).hexdigest()
                         if file_csum == f["sha256"]:
-                            logger.debug("Linking fetched file %s/%s", bundle_uuid, f["name"])
-                            if not os.path.exists(f"{self.sd}/bundles/{bundle_uuid}.{bundle_version}/{f['name']}"):
-                                os.symlink(f"../../files/{f['uuid']}",
-                                           f"{self.sd}/bundles/{bundle_uuid}.{bundle_version}/{f['name']}")
+                            self.link_file(bundle_uuid, bundle_version, f)
                             continue
                 except (FileNotFoundError, ):
                     pass
