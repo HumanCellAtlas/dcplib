@@ -101,7 +101,7 @@ class DSSExtractor:
         bundles_complete, percent_complete = 0, -1
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             total_bundles = self.dss_client.post_search(es_query=query, replica="aws")["total_hits"]
-            logging.info("Scanning %s bundles", total_bundles)
+            logger.info("Scanning %s bundles", total_bundles)
             for b in self.dss_client.post_search.iterate(es_query=query, replica="aws", per_page=500):
                 bundle_uuid, bundle_version = b["bundle_fqid"].split(".", 1)
                 f2f_futures.append(executor.submit(self.get_files_to_fetch_for_bundle, bundle_uuid, bundle_version))
@@ -121,6 +121,8 @@ class DSSExtractor:
             self.b2f[bundle_uuid + "." + bundle_version].remove(f["name"])
             if len(self.b2f[bundle_uuid + "." + bundle_version]) == 0:
                 self.dispatch_callbacks(bundle_uuid, bundle_version, transformer, loader)
+            else:
+                logger.debug("%s: %d files to go", bundle_uuid, len(self.b2f[bundle_uuid + "." + bundle_version]))
         for bundle_uuid, bundle_version in self.staged_bundles:
             self.dispatch_callbacks(bundle_uuid, bundle_version, transformer, loader)
         logger.info("Done (%d/%d bundles)", bundles_complete, total_bundles)
