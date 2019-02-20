@@ -92,7 +92,8 @@ class DSSExtractor:
                 self.staged_bundles.append([bundle_uuid, bundle_version])
         return len(f2f_futures)
 
-    def extract(self, query: dict = None, transformer: callable = None, loader: callable = None, max_workers=512):
+    def extract(self, query: dict = None, transformer: callable = None, loader: callable = None,
+                finalizer: callable = None, max_workers=512):
         if query is None:
             query = self.default_bundle_query
         os.makedirs("files", exist_ok=True)
@@ -125,11 +126,14 @@ class DSSExtractor:
                 logger.debug("%s: %d files to go", bundle_uuid, len(self.b2f[bundle_uuid + "." + bundle_version]))
         for bundle_uuid, bundle_version in self.staged_bundles:
             self.dispatch_callbacks(bundle_uuid, bundle_version, transformer, loader)
+        if finalizer is not None:
+            finalizer(extractor=self)
         logger.info("Done (%d/%d bundles)", bundles_complete, total_bundles)
 
     def dispatch_callbacks(self, bundle_uuid, bundle_version, transformer, loader):
         bundle_path = f"{self.sd}/bundles/{bundle_uuid}.{bundle_version}"
         if transformer is not None:
-            tb = transformer(bundle_uuid=bundle_uuid, bundle_version=bundle_version, bundle_path=bundle_path)
+            tb = transformer(bundle_uuid=bundle_uuid, bundle_version=bundle_version, bundle_path=bundle_path,
+                             extractor=self)
         if loader is not None:
-            loader(bundle=tb)
+            loader(extractor=self, transformer=transformer, bundle=tb)
