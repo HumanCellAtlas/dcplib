@@ -73,7 +73,7 @@ class DSSExtractor:
                     pass
                 files_to_fetch.append(f)
             else:
-                logger.debug("Skipping non-metadata file %s/%s", bundle_uuid, f["name"])
+                logger.debug("Skipping file %s/%s (no filter match)", bundle_uuid, f["name"])
         return bundle_uuid, bundle_version, files_to_fetch
 
     def enqueue_bundle_manifests(self, percent_complete, bundles_complete, total_bundles, f2f_futures, ff_futures,
