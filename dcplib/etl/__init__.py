@@ -1,8 +1,24 @@
 """
 Shared ETL (extract, transform, load) code for fetching and loading data from HCA DSS.
 
-The main entry point is the extract() function, which takes optional transform and load callbacks that will be invoked
-for each bundle fetched.
+The main entry point is the DSSExtractor.extract() function, which takes optional transform and load callbacks that
+will be invoked for each bundle fetched.
+
+Example usage:
+
+    from dcplib.etl import DSSExtractor
+
+    def tf(*args, **kwargs):
+        print("Transformer", args, kwargs)
+        return "TEST"
+
+    def ld(*args, **kwargs):
+        print("Loader", args, kwargs)
+
+    def fn(*args, **kwargs):
+        print("Finalizer", args, kwargs)
+
+    DSSExtractor(staging_directory=".").extract(transformer=tf, loader=ld, finalizer=fn)
 """
 
 import os, sys, json, concurrent.futures, hashlib, logging, threading
