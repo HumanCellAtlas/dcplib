@@ -1,3 +1,9 @@
+# Changes for v1.5.0 (2019-02-22)
+
+- Shared DSS client ETL code (#4)
+
+- Add dcplib.networking.http (#5)
+
 # Changes for v1.4.0 (2018-08-15)
 Config: allow customization of secret name
 
