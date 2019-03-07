@@ -4,7 +4,8 @@ MODULES=dcplib tests
 test: lint tests
 
 lint:
-	flake8 $(MODULES) *.py
+	if [[ "$$(python --version)" < "Python 3.6" ]]; then FLAKE8_OPTS="--exclude dcplib/etl"; fi; \
+	flake8 $(MODULES) *.py $$FLAKE8_OPTS
 
 tests:
 	PYTHONWARNINGS=ignore:ResourceWarning coverage run --source=dcplib \
