@@ -112,8 +112,8 @@ class DSSExtractor:
                 finalizer: callable = None, max_workers=512):
         if query is None:
             query = self.default_bundle_query
-        os.makedirs("files", exist_ok=True)
-        os.makedirs("bundles", exist_ok=True)
+        os.makedirs(f"{self.sd}/files", exist_ok=True)
+        os.makedirs(f"{self.sd}/bundles", exist_ok=True)
         f2f_futures, ff_futures = [], []
         bundles_complete, percent_complete = 0, -1
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
