@@ -1,5 +1,6 @@
 # media_types dependencies
-puremagic
-crcmod==1.7
 boto3 >= 1.7.13
+crc32c
+crcmod
+puremagic
 requests >= 2.18.4, < 3
