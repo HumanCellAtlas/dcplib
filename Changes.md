@@ -1,3 +1,9 @@
+# Changes for v1.5.1 (2019-03-11)
+
+- Ignore Python 3.6 code when testing on lower versions of Python
+
+- Fix directory initialization bug in ETL
+
 # Changes for v1.5.0 (2019-02-22)
 
 - Shared DSS client ETL code (#4)
