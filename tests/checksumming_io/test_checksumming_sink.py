@@ -2,7 +2,10 @@
 # coding: utf-8
 
 from __future__ import absolute_import, division, print_function, unicode_literals
-import os, sys, unittest
+
+import os
+import sys
+import unittest
 
 pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
 sys.path.insert(0, pkg_root)  # noqa
@@ -13,15 +16,23 @@ from . import TEST_FILE, TEST_FILE_CHECKSUMS
 
 
 class TestChecksummingSink(unittest.TestCase):
-
     file_size = os.path.getsize(TEST_FILE)
     chunk_size = s3_multipart.get_s3_multipart_chunk_size(file_size)
 
     def check_sums(self, checksums):
-        self.assertEqual(checksums['sha1'], TEST_FILE_CHECKSUMS['sha1'])
-        self.assertEqual(checksums['sha256'], TEST_FILE_CHECKSUMS['sha256'])
-        self.assertEqual(checksums['crc32c'].lower(), TEST_FILE_CHECKSUMS['crc32c'].lower())
-        self.assertEqual(checksums['s3_etag'], TEST_FILE_CHECKSUMS['s3_etag'])
+        [self.assertEqual(checksums[hash_function].lower(), TEST_FILE_CHECKSUMS[hash_function].lower()) for
+         hash_function in checksums.keys()]
+
+    def test_crc32c_calculation(self):
+        crc32 = ChecksummingSink.CRC32C()
+        checksum = None
+
+        with open(TEST_FILE, 'rb') as fh:
+            data = fh.read()
+            crc32.update(data)
+            checksum = crc32.hexdigest()
+
+        self.assertEqual(checksum.lower(), TEST_FILE_CHECKSUMS['crc32c'].lower())
 
     def test_checksums_after_single_write(self):
         sink = ChecksummingSink(self.chunk_size)
@@ -43,23 +54,15 @@ class TestChecksummingSink(unittest.TestCase):
         self.check_sums(sums)
 
     def test_hash_function_list_is_configurable(self):
-        sink = ChecksummingSink(self.chunk_size, hash_functions=('sha1', 's3_etag'))
+        checksums_to_compute = ['sha1', 's3_etag']
+        sink = ChecksummingSink(self.chunk_size, hash_functions=checksums_to_compute)
         with open(TEST_FILE, 'rb') as fh:
             data = fh.read()
             sink.write(data)
         sums = sink.get_checksums()
-        self.assertEqual(list(sorted(sums.keys())), sorted(['sha1', 's3_etag']))
-        self.assertEqual(sums['sha1'], TEST_FILE_CHECKSUMS['sha1'])
-        self.assertEqual(sums['s3_etag'], TEST_FILE_CHECKSUMS['s3_etag'])
-
-        sink = ChecksummingSink(self.chunk_size, hash_functions=('sha256', 'crc32c'))
-        with open(TEST_FILE, 'rb') as fh:
-            data = fh.read()
-            sink.write(data)
-        sums = sink.get_checksums()
-        self.assertEqual(sorted(list(sums.keys())), sorted(['sha256', 'crc32c']))
-        self.assertEqual(sums['sha256'], TEST_FILE_CHECKSUMS['sha256'])
-        self.assertEqual(sums['crc32c'].lower(), TEST_FILE_CHECKSUMS['crc32c'])
+        self.assertEqual(list(sorted(sums.keys())), sorted(checksums_to_compute))
+        [self.assertEqual(TEST_FILE_CHECKSUMS[checksum].lower(), sums[checksum].lower()) for checksum in
+         checksums_to_compute]
 
 
 if __name__ == '__main__':
