@@ -43,7 +43,20 @@ class DSSExtractor:
         self.filename_patterns = filename_patterns or []
         self.b2f = defaultdict(set)
         self.staged_bundles = []
-        self.dss_client = dss_client or hca.dss.DSSClient()
+        self._dss_client = dss_client or hca.dss.DSSClient()
+        self._dss_swagger_url = None
+
+    def __getstate__(self):
+        state = dict(self.__dict__)
+        state["_dss_swagger_url"] = self.dss_client.swagger_url
+        state["_dss_client"] = None
+        return state
+
+    @property
+    def dss_client(self):
+        if self._dss_client is None:
+            self._dss_client = hca.dss.DSSClient(swagger_url=self._dss_swagger_url)
+        return self._dss_client
 
     def link_file(self, bundle_uuid, bundle_version, f):
         if not os.path.exists(f"{self.sd}/bundles/{bundle_uuid}.{bundle_version}/{f['name']}"):
@@ -109,14 +122,14 @@ class DSSExtractor:
         return len(f2f_futures)
 
     def extract(self, query: dict = None, transformer: callable = None, loader: callable = None,
-                finalizer: callable = None, max_workers=512):
+                finalizer: callable = None, max_workers=512, executor_class=concurrent.futures.ThreadPoolExecutor):
         if query is None:
             query = self.default_bundle_query
         os.makedirs(f"{self.sd}/files", exist_ok=True)
         os.makedirs(f"{self.sd}/bundles", exist_ok=True)
         f2f_futures, ff_futures = [], []
         bundles_complete, percent_complete = 0, -1
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        with executor_class(max_workers=max_workers) as executor:
             total_bundles = self.dss_client.post_search(es_query=query, replica="aws")["total_hits"]
             logger.info("Scanning %s bundles", total_bundles)
             for b in self.dss_client.post_search.iterate(es_query=query, replica="aws", per_page=500):
