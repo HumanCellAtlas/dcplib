@@ -1,3 +1,11 @@
+# Changes for v1.6.0 (2019-03-21)
+
+- Add AWS utilities used by DSS and Query Service (#9)
+
+- Switch to the ICRAR implementation of CRC32C (#6)
+
+- Pin puremagic dependency to version 1.4
+
 # Changes for v1.5.1 (2019-03-11)
 
 - Ignore Python 3.6 code when testing on lower versions of Python
