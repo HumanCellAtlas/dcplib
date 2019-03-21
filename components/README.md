@@ -1,5 +1,11 @@
+Components to be Shared by DCP Infrastructure Automation Directly via Github
+============================================================================
+
+This folder is not included in the dcplib Python package and is a place to centralize files
+so that DCP infrastructure can fetch them.
+
 Trufflehog Regex Patterns
-=========================
+-------------------------
 
 `trufflehog_regex_patterns.json` is a set of custom regex patterns for use with trufflehog.
 
