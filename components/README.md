@@ -11,7 +11,7 @@ Trufflehog Regex Patterns
 
 In a CI/CD pipeline, one can use the following script:
 
-    wget -O regex.json https://raw.githubusercontent.com/HumanCellAtlas/dcplib/tree/master/dcplib/trufflehog_security_regex/trufflehog_regex_patterns.json
+    wget -O regex.json https://raw.githubusercontent.com/HumanCellAtlas/dcplib/master/components/trufflehog_regex_patterns.json
     trufflehog --regex --rules regex.json --entropy=False https://github.com/HumanCellAtlas/data-store.git
     rm regex.json
 
