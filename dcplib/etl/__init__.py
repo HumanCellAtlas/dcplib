@@ -46,6 +46,8 @@ class DSSExtractor:
         self._dss_client = dss_client or hca.dss.DSSClient()
         self._dss_swagger_url = None
 
+    # concurrent.futures.ProcessPoolExecutor requires objects to be picklable.
+    # hca.dss.DSSClient is unpicklable and is stubbed out here to preserve DSSExtractor's picklability.
     def __getstate__(self):
         state = dict(self.__dict__)
         state["_dss_swagger_url"] = self.dss_client.swagger_url
@@ -122,14 +124,14 @@ class DSSExtractor:
         return len(f2f_futures)
 
     def extract(self, query: dict = None, transformer: callable = None, loader: callable = None,
-                finalizer: callable = None, max_workers=512, executor_class=concurrent.futures.ThreadPoolExecutor):
+                finalizer: callable = None, max_workers=512):
         if query is None:
             query = self.default_bundle_query
         os.makedirs(f"{self.sd}/files", exist_ok=True)
         os.makedirs(f"{self.sd}/bundles", exist_ok=True)
         f2f_futures, ff_futures = [], []
         bundles_complete, percent_complete = 0, -1
-        with executor_class(max_workers=max_workers) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             total_bundles = self.dss_client.post_search(es_query=query, replica="aws")["total_hits"]
             logger.info("Scanning %s bundles", total_bundles)
             for b in self.dss_client.post_search.iterate(es_query=query, replica="aws", per_page=500):
