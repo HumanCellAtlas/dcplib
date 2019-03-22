@@ -91,6 +91,9 @@ class DSSExtractor:
         res.raise_for_status()
         logger.debug("Scanning bundle %s", bundle_uuid)
         files_to_fetch = []
+        os.makedirs(f"{self.sd}/bundle_manifests", exist_ok=True)
+        with open(f"{self.sd}/bundle_manifests/{bundle_uuid}.{bundle_version}.json", "w") as fh:
+            json.dump(res.json()["bundle"], fh)
         for f in res.json()["bundle"]["files"]:
             if self.should_fetch_file(f):
                 os.makedirs(f"{self.sd}/bundles/{bundle_uuid}.{bundle_version}", exist_ok=True)
@@ -166,8 +169,9 @@ class DSSExtractor:
 
     def dispatch_callbacks(self, bundle_uuid, bundle_version, transformer, loader):
         bundle_path = f"{self.sd}/bundles/{bundle_uuid}.{bundle_version}"
+        bundle_manifest_path = f"{self.sd}/bundle_manifests/{bundle_uuid}.{bundle_version}.json"
         if transformer is not None:
             tb = transformer(bundle_uuid=bundle_uuid, bundle_version=bundle_version, bundle_path=bundle_path,
-                             extractor=self)
+                             bundle_manifest_path=bundle_manifest_path, extractor=self)
         if loader is not None:
             loader(extractor=self, transformer=transformer, bundle=tb)
