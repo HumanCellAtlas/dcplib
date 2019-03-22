@@ -124,7 +124,8 @@ class DSSExtractor:
         return len(f2f_futures)
 
     def extract(self, query: dict = None, transformer: callable = None, loader: callable = None,
-                finalizer: callable = None, max_workers=512):
+                finalizer: callable = None, max_workers=512, max_dispatchers=1,
+                dispatch_executor_class: concurrent.futures.Executor = concurrent.futures.ThreadPoolExecutor):
         if query is None:
             query = self.default_bundle_query
         os.makedirs(f"{self.sd}/files", exist_ok=True)
@@ -148,15 +149,17 @@ class DSSExtractor:
             bundles_complete += self.enqueue_bundle_manifests(percent_complete, bundles_complete, total_bundles,
                                                               f2f_futures, ff_futures, executor)
 
-        for future in concurrent.futures.as_completed(ff_futures):
-            f, bundle_uuid, bundle_version = future.result()
-            self.b2f[bundle_uuid + "." + bundle_version].remove(f["name"])
-            if len(self.b2f[bundle_uuid + "." + bundle_version]) == 0:
-                self.dispatch_callbacks(bundle_uuid, bundle_version, transformer, loader)
-            else:
-                logger.debug("%s: %d files to go", bundle_uuid, len(self.b2f[bundle_uuid + "." + bundle_version]))
-        for bundle_uuid, bundle_version in self.staged_bundles:
-            self.dispatch_callbacks(bundle_uuid, bundle_version, transformer, loader)
+        with dispatch_executor_class(max_workers=max_dispatchers) as executor:
+            for future in concurrent.futures.as_completed(ff_futures):
+                f, bundle_uuid, bundle_version = future.result()
+                self.b2f[bundle_uuid + "." + bundle_version].remove(f["name"])
+                if len(self.b2f[bundle_uuid + "." + bundle_version]) == 0:
+                    executor.submit(self.dispatch_callbacks, bundle_uuid, bundle_version, transformer, loader)
+                else:
+                    logger.debug("%s: %d files to go", bundle_uuid, len(self.b2f[bundle_uuid + "." + bundle_version]))
+            for bundle_uuid, bundle_version in self.staged_bundles:
+                executor.submit(self.dispatch_callbacks, bundle_uuid, bundle_version, transformer, loader)
+
         if finalizer is not None:
             finalizer(extractor=self)
         logger.info("Done (%d/%d bundles)", bundles_complete, total_bundles)
