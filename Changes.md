@@ -1,3 +1,7 @@
+# Changes for v1.6.2 (2019-03-22)
+
+- ETL: Pass bundle manifest to transformer (#14)
+
 # Changes for v1.6.1 (2019-03-22)
 
 - add ETL option to parallelize transformers and loaders (#13)
