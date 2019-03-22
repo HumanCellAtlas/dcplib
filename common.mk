@@ -1,4 +1,4 @@
-# Dependencies: git pandoc moreutils httpie
+# Dependencies: git pandoc moreutils httpie twine
 
 SHELL=/bin/bash -eo pipefail
 
@@ -32,7 +32,8 @@ release:
 	$(MAKE) pypi_release
 
 pypi_release:
-	python setup.py sdist bdist_wheel upload
+	python setup.py sdist bdist_wheel
+	twine upload dist/*.tar.gz dist/*.whl --sign --verbose
 
 undo:
 	$(eval export TAG=$(shell git describe --tags --match 'v*.*.*'))
