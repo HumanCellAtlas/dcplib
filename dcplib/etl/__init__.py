@@ -110,7 +110,7 @@ class DSSExtractor:
 
     def extract(self, query: dict = None, transformer: callable = None, loader: callable = None,
                 finalizer: callable = None, max_workers=512, max_dispatchers=1,
-                dispatch_executor_class: concurrent.futures.Executor=concurrent.futures.ThreadPoolExecutor):
+                dispatch_executor_class: concurrent.futures.Executor = concurrent.futures.ThreadPoolExecutor):
         if query is None:
             query = self.default_bundle_query
         os.makedirs(f"{self.sd}/files", exist_ok=True)
