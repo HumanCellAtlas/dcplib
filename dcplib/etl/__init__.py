@@ -43,7 +43,22 @@ class DSSExtractor:
         self.filename_patterns = filename_patterns or []
         self.b2f = defaultdict(set)
         self.staged_bundles = []
-        self.dss_client = dss_client or hca.dss.DSSClient()
+        self._dss_client = dss_client or hca.dss.DSSClient()
+        self._dss_swagger_url = None
+
+    # concurrent.futures.ProcessPoolExecutor requires objects to be picklable.
+    # hca.dss.DSSClient is unpicklable and is stubbed out here to preserve DSSExtractor's picklability.
+    def __getstate__(self):
+        state = dict(self.__dict__)
+        state["_dss_swagger_url"] = self.dss_client.swagger_url
+        state["_dss_client"] = None
+        return state
+
+    @property
+    def dss_client(self):
+        if self._dss_client is None:
+            self._dss_client = hca.dss.DSSClient(swagger_url=self._dss_swagger_url)
+        return self._dss_client
 
     def link_file(self, bundle_uuid, bundle_version, f):
         if not os.path.exists(f"{self.sd}/bundles/{bundle_uuid}.{bundle_version}/{f['name']}"):
