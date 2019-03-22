@@ -1,3 +1,11 @@
+# Changes for v1.6.1 (2019-03-22)
+
+- add ETL option to parallelize transformers and loaders (#13)
+
+- Make dcplib.etl.DSSExtractor picklable (#12)
+
+- Add trufflehog regexes to dcplib. (#10)
+
 # Changes for v1.6.0 (2019-03-21)
 
 - Add AWS utilities used by DSS and Query Service (#9)
