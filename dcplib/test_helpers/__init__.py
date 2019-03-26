@@ -2,7 +2,6 @@ import os, sys, json, re, unittest, functools, typing, collections, pprint, time
 
 import requests
 from furl import furl
-from flask import wrappers
 
 
 class ExpectedErrorFields(typing.NamedTuple):
@@ -21,7 +20,7 @@ class ExpectedErrorFields(typing.NamedTuple):
 
 
 class DCPAssertResponse(typing.NamedTuple):
-    response: wrappers.Response
+    response: typing.Any
     body: str
     json: typing.Optional[typing.Any]
 
@@ -81,7 +80,8 @@ class DCPAssertMixin:
                 time.sleep(retry_after)
 
         try:
-            actual_json = response.json()
+            # response.json is a callable in requests.models.Response, property in flask.wrappers.Response
+            actual_json = response.json() if callable(response.json) else response.json
         except json.decoder.JSONDecodeError:
             actual_json = None
 
@@ -105,11 +105,13 @@ class DCPAssertMixin:
                 pprint.pprint(actual_json)
             raise
 
-        return DCPAssertResponse(response, response.content, actual_json)
+        return DCPAssertResponse(response,
+                                 response.content if hasattr(response, "content") else response.response,
+                                 actual_json)
 
     def assertHeaders(
             self,
-            response: wrappers.Response,
+            response: typing.Any,
             expected_headers: dict = {}) -> None:
         for header_name, header_value in expected_headers.items():
             self.assertEqual(response.headers[header_name], header_value)
