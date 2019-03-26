@@ -1,3 +1,5 @@
 flake8
 coverage
+furl
+flask
 -r requirements.txt
