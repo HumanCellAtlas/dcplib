@@ -1,7 +1,8 @@
-import unittest, io
+import unittest, io, sys
 from unittest.mock import MagicMock
 
 class TestTestHelpers(unittest.TestCase):
+    @unittest.skipIf(sys.version_info < (3, 6), "Only testing under Python 3.6+")
     def test_test_helpers(self):
         from dcplib.test_helpers import DCPAssertMixin, ExpectedErrorFields
         from flask import wrappers
