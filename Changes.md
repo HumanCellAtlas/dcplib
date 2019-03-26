@@ -1,3 +1,7 @@
+# Changes for v1.6.3 (2019-03-26)
+
+- Add test helpers originally from DSS (#11)
+
 # Changes for v1.6.2 (2019-03-22)
 
 - ETL: Pass bundle manifest to transformer (#14)
