@@ -1,3 +1,9 @@
+# Changes for v1.6.4 (2019-03-28)
+
+- Removing crcmod dependency from dcplib (#16)
+
+- ETL: consume dispatch callbacks futures, add tests (#15)
+
 # Changes for v1.6.3 (2019-03-26)
 
 - Add test helpers originally from DSS (#11)
