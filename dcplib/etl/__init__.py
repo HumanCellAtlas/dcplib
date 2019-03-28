@@ -137,6 +137,9 @@ class DSSExtractor:
         bundles_complete, percent_complete = 0, -1
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             total_bundles = self.dss_client.post_search(es_query=query, replica="aws")["total_hits"]
+            if total_bundles == 0:
+                logger.error("No bundles found, nothing to do")
+                return
             logger.info("Scanning %s bundles", total_bundles)
             for b in self.dss_client.post_search.iterate(es_query=query, replica="aws", per_page=500):
                 bundle_uuid, bundle_version = b["bundle_fqid"].split(".", 1)
