@@ -7,24 +7,24 @@ logger = logging.getLogger(__name__)
 calls = defaultdict(int)
 
 def tf(*args, **kwargs):
-    logger.debug(f"Transformer called with {args} {kwargs}")
+    logger.debug("Transformer called with %s %s", args, kwargs)
     calls["tf"] += 1
     return "TEST"
 
 def ld(*args, **kwargs):
-    logger.debug(f"Loader called with {args} {kwargs}")
+    logger.debug("Loader called with %s %s", args, kwargs)
     calls["ld"] += 1
     assert kwargs["bundle"] == "TEST"
 
 def fn(*args, **kwargs):
-    logger.debug(f"Finalizer called with {args} {kwargs}")
+    logger.debug("Finalizer called with %s %s", args, kwargs)
     calls["fn"] += 1
 
 class TestETLException(Exception):
     pass
 
 def error_fn(*args, **kwargs):
-    logger.debug(f"Finalizer called with {args} {kwargs}, raising error")
+    logger.debug("Finalizer called with %s %s, raising error", args, kwargs)
     raise TestETLException("test")
 
 class TestETL(unittest.TestCase):
@@ -48,7 +48,7 @@ class TestETL(unittest.TestCase):
 
                 def iterate(self, es_query, replica, per_page):
                     for i in range(4):
-                        yield {"bundle_fqid": f"a{i}.b"}
+                        yield {"bundle_fqid": "a%d.b" % i}
 
             post_search = MockDSSMethod()
 
