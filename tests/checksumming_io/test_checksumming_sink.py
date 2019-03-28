@@ -12,6 +12,7 @@ sys.path.insert(0, pkg_root)  # noqa
 
 from dcplib import s3_multipart
 from dcplib.checksumming_io import ChecksummingSink
+from dcplib.checksumming_io._crc32c import CRC32C
 from . import TEST_FILE, TEST_FILE_CHECKSUMS
 
 
@@ -24,8 +25,7 @@ class TestChecksummingSink(unittest.TestCase):
          hash_function in checksums.keys()]
 
     def test_crc32c_calculation(self):
-        crc32 = ChecksummingSink.CRC32C()
-        checksum = None
+        crc32 = CRC32C()
 
         with open(TEST_FILE, 'rb') as fh:
             data = fh.read()
