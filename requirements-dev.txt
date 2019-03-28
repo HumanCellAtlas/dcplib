@@ -2,4 +2,5 @@ flake8
 coverage
 furl
 flask
+hca
 -r requirements.txt

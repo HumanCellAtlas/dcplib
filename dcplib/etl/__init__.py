@@ -137,6 +137,9 @@ class DSSExtractor:
         bundles_complete, percent_complete = 0, -1
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             total_bundles = self.dss_client.post_search(es_query=query, replica="aws")["total_hits"]
+            if total_bundles == 0:
+                logger.error("No bundles found, nothing to do")
+                return
             logger.info("Scanning %s bundles", total_bundles)
             for b in self.dss_client.post_search.iterate(es_query=query, replica="aws", per_page=500):
                 bundle_uuid, bundle_version = b["bundle_fqid"].split(".", 1)
@@ -153,15 +156,20 @@ class DSSExtractor:
                                                               f2f_futures, ff_futures, executor)
 
         with dispatch_executor_class(max_workers=max_dispatchers) as executor:
+            dispatch_callbacks_futures = []
             for future in concurrent.futures.as_completed(ff_futures):
                 f, bundle_uuid, bundle_version = future.result()
                 self.b2f[bundle_uuid + "." + bundle_version].remove(f["name"])
                 if len(self.b2f[bundle_uuid + "." + bundle_version]) == 0:
-                    executor.submit(self.dispatch_callbacks, bundle_uuid, bundle_version, transformer, loader)
+                    future = executor.submit(self.dispatch_callbacks, bundle_uuid, bundle_version, transformer, loader)
+                    dispatch_callbacks_futures.append(future)
                 else:
                     logger.debug("%s: %d files to go", bundle_uuid, len(self.b2f[bundle_uuid + "." + bundle_version]))
             for bundle_uuid, bundle_version in self.staged_bundles:
-                executor.submit(self.dispatch_callbacks, bundle_uuid, bundle_version, transformer, loader)
+                future = executor.submit(self.dispatch_callbacks, bundle_uuid, bundle_version, transformer, loader)
+                dispatch_callbacks_futures.append(future)
+            for future in concurrent.futures.as_completed(dispatch_callbacks_futures):
+                future.result()
 
         if finalizer is not None:
             finalizer(extractor=self)
