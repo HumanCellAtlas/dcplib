@@ -153,15 +153,20 @@ class DSSExtractor:
                                                               f2f_futures, ff_futures, executor)
 
         with dispatch_executor_class(max_workers=max_dispatchers) as executor:
+            dispatch_callbacks_futures = []
             for future in concurrent.futures.as_completed(ff_futures):
                 f, bundle_uuid, bundle_version = future.result()
                 self.b2f[bundle_uuid + "." + bundle_version].remove(f["name"])
                 if len(self.b2f[bundle_uuid + "." + bundle_version]) == 0:
-                    executor.submit(self.dispatch_callbacks, bundle_uuid, bundle_version, transformer, loader)
+                    future = executor.submit(self.dispatch_callbacks, bundle_uuid, bundle_version, transformer, loader)
+                    dispatch_callbacks_futures.append(future)
                 else:
                     logger.debug("%s: %d files to go", bundle_uuid, len(self.b2f[bundle_uuid + "." + bundle_version]))
             for bundle_uuid, bundle_version in self.staged_bundles:
-                executor.submit(self.dispatch_callbacks, bundle_uuid, bundle_version, transformer, loader)
+                future = executor.submit(self.dispatch_callbacks, bundle_uuid, bundle_version, transformer, loader)
+                dispatch_callbacks_futures.append(future)
+            for future in concurrent.futures.as_completed(dispatch_callbacks_futures):
+                future.result()
 
         if finalizer is not None:
             finalizer(extractor=self)
