@@ -25,9 +25,9 @@ class CRC32C:
         _checksum_byte_value = self._long_to_bytes(self._checksum_value)
         if sys.version < PYTHON_VERSION_CUTOFF:
             import binascii
-            return binascii.hexlify(_checksum_byte_value).decode("utf-8")
+            return binascii.hexlify(_checksum_byte_value).decode("utf-8").zfill(8)
         else:
-            return _checksum_byte_value.hex()
+            return _checksum_byte_value.hex().zfill(8)
 
     def _long_to_bytes(self, long_value):
         """
