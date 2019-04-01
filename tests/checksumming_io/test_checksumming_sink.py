@@ -34,6 +34,14 @@ class TestChecksummingSink(unittest.TestCase):
 
         self.assertEqual(checksum.lower(), TEST_FILE_CHECKSUMS['crc32c'].lower())
 
+    def test_crc32_calculation_empty_data_is_zero_padded(self):
+        crc32 = CRC32C()
+
+        crc32.update(b"")
+        checksum = crc32.hexdigest()
+
+        self.assertEquals(checksum.lower(), "00000000")
+
     def test_checksums_after_single_write(self):
         sink = ChecksummingSink(self.chunk_size)
         with open(TEST_FILE, 'rb') as fh:
