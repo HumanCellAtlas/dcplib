@@ -1,3 +1,7 @@
+# Changes for v1.6.5 (2019-04-01)
+
+- Add padding for crc32c calculation to make it 8 characters in length to be backwards compatible. (#17)
+
 # Changes for v1.6.4 (2019-03-28)
 
 - Removing crcmod dependency from dcplib (#16)
