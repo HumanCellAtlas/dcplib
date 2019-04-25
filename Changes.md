@@ -1,3 +1,7 @@
+# Changes for v1.6.6 (2019-04-25)
+
+- networking.HTTPRequest: set max redirects to a high number (#19)
+
 # Changes for v1.6.5 (2019-04-01)
 
 - Add padding for crc32c calculation to make it 8 characters in length to be backwards compatible. (#17)
