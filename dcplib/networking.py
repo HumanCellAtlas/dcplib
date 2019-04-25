@@ -35,6 +35,7 @@ class HTTPRequest:
                                backoff_factor=0.1,
                                status_forcelist=frozenset({500, 502, 503, 504}))
     timeout_policy = timeout.Timeout(connect=20, read=40)
+    max_redirects = 1024
 
     def __init__(self):
         self.sessions = {}
@@ -42,6 +43,7 @@ class HTTPRequest:
     def __call__(self, *args, **kwargs):
         if get_ident() not in self.sessions:
             session = requests.Session()
+            session.max_redirects = self.max_redirects
             adapter = HTTPAdapter(max_retries=self.retry_policy)
             session.mount('http://', adapter)
             session.mount('https://', adapter)
