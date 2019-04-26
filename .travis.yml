@@ -5,6 +5,8 @@ python:
 - 3.4
 - 3.5
 - 3.6
+before_install:
+- export BOTO_CONFIG=/dev/null
 install:
 - pip install -r requirements-dev.txt
 script:

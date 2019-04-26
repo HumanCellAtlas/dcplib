@@ -3,4 +3,5 @@ coverage
 furl
 flask
 hca
+moto
 -r requirements.txt
