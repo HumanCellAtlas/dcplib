@@ -33,7 +33,7 @@ release:
 
 pypi_release:
 	python setup.py sdist bdist_wheel
-	twine upload dist/*.tar.gz dist/*.whl --sign --verbose
+	twine upload dist/*.tar.gz dist/*.whl --verbose
 
 undo:
 	$(eval export TAG=$(shell git describe --tags --match 'v*.*.*'))
