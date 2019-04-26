@@ -1,3 +1,5 @@
+# Changes for v1.9.0 (2019-04-26)
+
 # Changes for v1.8.0 (2019-04-26)
 Added twine to requirements-dev
 # Changes for v1.7.0 (2019-04-26)
