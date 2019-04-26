@@ -1,3 +1,5 @@
+# Changes for v1.7.0 (2019-04-26)
+Adding module for working with SQS. (#20)
 # Changes for v1.6.6 (2019-04-25)
 
 - networking.HTTPRequest: set max redirects to a high number (#19)
