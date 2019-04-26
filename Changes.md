@@ -1,3 +1,5 @@
+# Changes for v1.10.0 (2019-04-26)
+Remove gpg signing from twine
 # Changes for v1.9.0 (2019-04-26)
 
 # Changes for v1.8.0 (2019-04-26)
