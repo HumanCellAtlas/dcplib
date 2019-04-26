@@ -4,4 +4,5 @@ furl
 flask
 hca
 moto
+twine
 -r requirements.txt
