@@ -1,3 +1,5 @@
+# Changes for v1.8.0 (2019-04-26)
+Added twine to requirements-dev
 # Changes for v1.7.0 (2019-04-26)
 Adding module for working with SQS. (#20)
 # Changes for v1.6.6 (2019-04-25)
