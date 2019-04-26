@@ -1,3 +1,5 @@
+# Changes for v2.0.0 (2019-04-26)
+Fix release
 # Changes for v1.1.0 (2019-04-26)
 
 # Changes for v1.10.0 (2019-04-26)
