@@ -1,12 +1,14 @@
 import json
 
+from tenacity import retry, wait_fixed, stop_after_attempt
+
 from . import resources, clients
 
 
 class SQSHandler:
     """
     A class encapsulating the behaviors associated with interacting with an SQS Queue object and raising errors when
-    queue-related behaviors fail.
+    queue-related behaviors fail after reattempting several times.
     """
 
     def __init__(self, queue_name=None, queue_url=None):
@@ -17,18 +19,21 @@ class SQSHandler:
         else:
             raise Exception("Expected either queue_name or queue_url to be specified")
 
+    @retry(reraise=True, wait=wait_fixed(2), stop=stop_after_attempt(5))
     def add_message_to_queue(self, payload, **attributes):
         """ Given a payload (a dict) and any optional message attributes (also a dict), add it to the queue. """
 
         return self.queue.send_message(MessageBody=json.dumps(payload),
                                        MessageAttributes={k: {"StringValue": v} for k, v in attributes.items()})
 
+    @retry(reraise=True, wait=wait_fixed(2), stop=stop_after_attempt(5))
     def receive_messages_from_queue(self, wait_time=15, num_messages=1):
         """ Returns the first (according to FIFO) element in the queue; if none, then returns None."""
 
         return self.queue.receive_messages(MaxNumberOfMessages=num_messages,
                                            WaitTimeSeconds=wait_time)
 
+    @retry(reraise=True, wait=wait_fixed(2), stop=stop_after_attempt(5))
     def delete_message_from_queue(self, receipt_handle):
         """ Deletes the specified element from the queue if it exists and does nothing otherwise. """
 
