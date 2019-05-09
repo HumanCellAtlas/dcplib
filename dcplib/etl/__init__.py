@@ -29,7 +29,6 @@ import hca
 from ..networking import http
 from hca.util import RetryPolicy
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class DSSExtractor:
