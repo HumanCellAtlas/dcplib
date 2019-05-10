@@ -36,7 +36,7 @@ class DSSExtractor:
     default_content_type_patterns = ['application/json; dcp-type="metadata*"']
 
     def __init__(self, staging_directory, content_type_patterns: list = None, filename_patterns: list = None,
-                 dss_client: hca.dss.DSSClient = None):
+                 dss_client: hca.dss.DSSClient = None, dispatch_on_empty_bundles=False):
         self.sd = staging_directory
         self.content_type_patterns = content_type_patterns or self.default_content_type_patterns
         self.filename_patterns = filename_patterns or []
@@ -44,6 +44,7 @@ class DSSExtractor:
         self.staged_bundles = []
         self._dss_client = dss_client or hca.dss.DSSClient()
         self._dss_swagger_url = None
+        self._dispatch_on_empty_bundles = dispatch_on_empty_bundles
 
     # concurrent.futures.ProcessPoolExecutor requires objects to be picklable.
     # hca.dss.DSSClient is unpicklable and is stubbed out here to preserve DSSExtractor's picklability.
@@ -177,6 +178,11 @@ class DSSExtractor:
     def dispatch_callbacks(self, bundle_uuid, bundle_version, transformer, loader):
         bundle_path = f"{self.sd}/bundles/{bundle_uuid}.{bundle_version}"
         bundle_manifest_path = f"{self.sd}/bundle_manifests/{bundle_uuid}.{bundle_version}.json"
+        if not os.path.exists(bundle_path):
+            if self._dispatch_on_empty_bundles:
+                bundle_path = None
+            else:
+                return
         if transformer is not None:
             tb = transformer(bundle_uuid=bundle_uuid, bundle_version=bundle_version, bundle_path=bundle_path,
                              bundle_manifest_path=bundle_manifest_path, extractor=self)

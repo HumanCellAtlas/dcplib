@@ -101,5 +101,19 @@ class TestETL(unittest.TestCase):
                           max_workers=2,
                           max_dispatchers=1)
 
+        with tempfile.TemporaryDirectory() as td:
+            files = []
+            for dispatch_on_empty_bundles in True, False:
+                e = dcplib.etl.DSSExtractor(staging_directory=td,
+                                            content_type_patterns=["application/json"],
+                                            filename_patterns=["*.json"],
+                                            dss_client=MockDSSClient(),
+                                            dispatch_on_empty_bundles=dispatch_on_empty_bundles)
+
+                e.extract(transformer=tf, loader=ld, finalizer=fn, query={"test": True}, max_workers=2)
+            self.assertEqual(calls["tf"], 12)
+            self.assertEqual(calls["ld"], 12)
+            self.assertEqual(calls["fn"], 4)
+
 if __name__ == '__main__':
     unittest.main()
