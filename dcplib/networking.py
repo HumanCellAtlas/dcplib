@@ -11,15 +11,13 @@ from requests.packages.urllib3.util import retry, timeout
 
 logger = logging.getLogger(__name__)
 
-class RetryPolicy(retry.Retry):
-    def __init__(self, retry_after_status_codes={301}, *args, **kwargs):
-        super(RetryPolicy, self).__init__(*args, **kwargs)
-        self.RETRY_AFTER_STATUS_CODES = frozenset(retry_after_status_codes | retry.Retry.RETRY_AFTER_STATUS_CODES)
-
-    def increment(self, *args, **kwargs):
-        retry = super(RetryPolicy, self).increment(*args, **kwargs)
-        logger.warning("Retrying: {}".format(retry.history[-1]))
-        return retry
+class Session(requests.Session):
+    def resolve_redirects(self, resp, req, **kwargs):
+        if self.get_redirect_target(resp) and "Retry-After" in resp.headers:
+            logger.warning("Waiting %ss before redirect per Retry-After header", resp.headers["Retry-After"])
+            resp.connection.max_retries.sleep_for_retry(resp.raw)
+        for rv in super(Session, self).resolve_redirects(resp, req, **kwargs):
+            yield rv
 
 class HTTPRequest:
     """
@@ -30,7 +28,7 @@ class HTTPRequest:
 
     The per-thread session tracking is to avoid many threads sharing the same session in multithreaded environments.
     """
-    retry_policy = RetryPolicy(read=4,
+    retry_policy = retry.Retry(read=4,
                                status=4,
                                backoff_factor=0.1,
                                status_forcelist=frozenset({500, 502, 503, 504}))
@@ -42,7 +40,7 @@ class HTTPRequest:
 
     def __call__(self, *args, **kwargs):
         if get_ident() not in self.sessions:
-            session = requests.Session()
+            session = Session()
             session.max_redirects = self.max_redirects
             adapter = HTTPAdapter(max_retries=self.retry_policy)
             session.mount('http://', adapter)
