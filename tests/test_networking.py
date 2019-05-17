@@ -9,7 +9,7 @@ from dcplib.networking import http
 
 class MockServer(Thread):
     def __init__(self, port=5000):
-        super().__init__()
+        super(MockServer, self).__init__()
         self.port = port
         self.app = Flask(__name__)
         self.url = "http://localhost:%s" % self.port
