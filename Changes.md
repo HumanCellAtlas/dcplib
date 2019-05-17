@@ -1,3 +1,9 @@
+# Changes for v2.0.1 (2019-05-17)
+
+- Fix redirect logic when Retry-After is given with a 301 redirect (#23)
+
+- ETL fixes: Configurable dispatch for empty bundles (#18); do not configure global logging
+
 # Changes for v2.0.0 (2019-04-26)
 Fix release
 # Changes for v1.1.0 (2019-04-26)
