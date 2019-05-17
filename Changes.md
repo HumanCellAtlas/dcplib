@@ -1,3 +1,7 @@
+# Changes for v2.0.2 (2019-05-17)
+
+- Fix erroneous initialization of ETL DSS client
+
 # Changes for v2.0.1 (2019-05-17)
 
 - Fix redirect logic when Retry-After is given with a 301 redirect (#23)
