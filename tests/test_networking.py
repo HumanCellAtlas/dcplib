@@ -55,6 +55,7 @@ class TestNetworking(unittest.TestCase):
         http.get(self.server.url)
         end_time = time.time()
         self.assertGreaterEqual(end_time - start_time, 2.0)
+        self.assertLessEqual(end_time - start_time, 8.0)
 
 if __name__ == '__main__':
     unittest.main()
