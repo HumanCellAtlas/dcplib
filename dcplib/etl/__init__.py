@@ -42,7 +42,7 @@ class DSSExtractor:
         self.filename_patterns = filename_patterns or []
         self.b2f = defaultdict(set)
         self.staged_bundles = []
-        self._dss_client = dss_client or hca.dss.DSSClient()
+        self._dss_client = dss_client
         self._dss_swagger_url = None
         self._dispatch_on_empty_bundles = dispatch_on_empty_bundles
 
