@@ -21,7 +21,7 @@ Example usage:
     DSSExtractor(staging_directory=".").extract(transformer=tf, loader=ld, finalizer=fn)
 """
 
-import os, sys, json, concurrent.futures, hashlib, logging, threading, sqlite3
+import os, sys, json, concurrent.futures, hashlib, logging, threading
 from collections import defaultdict
 from fnmatch import fnmatchcase
 
@@ -30,23 +30,6 @@ from ..networking import http
 from hca.util import RetryPolicy
 
 logger = logging.getLogger(__name__)
-
-class BundleManifestCache:
-    def __init__(self, db_name=__name__, db_dir="."):
-        self.db = sqlite3.connect(os.path.join(db_dir, db_name) + ".db")
-        self.db.execute("CREATE TABLE IF NOT EXISTS " + self.__class__.__name__ + " (k text unique, v text)")
-        self.cursor = self.db.cursor()
-
-    def __getitem__(self, i):
-        self.cursor.execute('SELECT v FROM ' + self.__class__.__name__ + ' WHERE k = ?', (i, ))
-        item = self.cursor.fetchone()
-        if item is None:
-            raise KeyError(i)
-        return item[0]
-
-    def __setitem__(self, item, value):
-        self.cursor.execute('REPLACE INTO ' + self.__class__.__name__ + ' (k, v) VALUES (?,?)', (item, value))
-        self.db.commit()
 
 
 class DSSExtractor:
