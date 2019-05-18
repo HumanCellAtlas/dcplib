@@ -21,7 +21,7 @@ Example usage:
     DSSExtractor(staging_directory=".").extract(transformer=tf, loader=ld, finalizer=fn)
 """
 
-import os, sys, json, concurrent.futures, hashlib, logging, threading
+import os, sys, json, concurrent.futures, hashlib, logging, threading, sqlite3
 from collections import defaultdict
 from fnmatch import fnmatchcase
 
@@ -30,6 +30,24 @@ from ..networking import http
 from hca.util import RetryPolicy
 
 logger = logging.getLogger(__name__)
+
+class BundleManifestCache:
+    def __init__(self, db_name=__name__, db_dir="."):
+        self.db = sqlite3.connect(os.path.join(db_dir, db_name) + ".db")
+        self.db.execute("CREATE TABLE IF NOT EXISTS " + self.__class__.__name__ + " (k text unique, v text)")
+        self.cursor = self.db.cursor()
+
+    def __getitem__(self, i):
+        self.cursor.execute('SELECT v FROM ' + self.__class__.__name__ + ' WHERE k = ?', (i, ))
+        item = self.cursor.fetchone()
+        if item is None:
+            raise KeyError(i)
+        return item[0]
+
+    def __setitem__(self, item, value):
+        self.cursor.execute('REPLACE INTO ' + self.__class__.__name__ + ' (k, v) VALUES (?,?)', (item, value))
+        self.db.commit()
+
 
 class DSSExtractor:
     default_bundle_query = {'query': {'bool': {'must_not': {'term': {'admin_deleted': True}}}}}
@@ -63,13 +81,14 @@ class DSSExtractor:
     def link_file(self, bundle_uuid, bundle_version, f):
         if not os.path.exists(f"{self.sd}/bundles/{bundle_uuid}.{bundle_version}/{f['name']}"):
             logger.debug("Linking fetched file %s/%s", bundle_uuid, f["name"])
-            os.symlink(f"../../files/{f['uuid']}", f"{self.sd}/bundles/{bundle_uuid}.{bundle_version}/{f['name']}")
+            os.symlink(f"../../files/{f['uuid']}.{f['version']}",
+                       f"{self.sd}/bundles/{bundle_uuid}.{bundle_version}/{f['name']}")
 
     def get_file(self, f, bundle_uuid, bundle_version, print_progress=True):
         logger.debug("[%s] Fetching %s:%s", threading.current_thread().getName(), bundle_uuid, f["name"])
         res = http.get(f"{self.dss_client.host}/files/{f['uuid']}", params={"replica": "aws", "version": f["version"]})
         res.raise_for_status()
-        with open(f"{self.sd}/files/{f['uuid']}", "wb") as fh:
+        with open(f"{self.sd}/files/{f['uuid']}.{f['version']}", "wb") as fh:
             fh.write(res.content)
         self.link_file(bundle_uuid, bundle_version, f)
         logger.debug("Wrote %s:%s", bundle_uuid, f["name"])
@@ -86,22 +105,30 @@ class DSSExtractor:
         return False
 
     def get_files_to_fetch_for_bundle(self, bundle_uuid, bundle_version):
-        logger.debug("[%s] Fetching manifest for bundle %s", threading.current_thread().getName(), bundle_uuid)
-        res = http.get(f"{self.dss_client.host}/bundles/{bundle_uuid}", params={"replica": "aws"})
-        res.raise_for_status()
+        try:
+            with open(f"{self.sd}/bundle_manifests/{bundle_uuid}.{bundle_version}.json") as fh:
+                bundle_manifest = json.load(fh)
+            logger.debug("[%s] Loaded cached manifest for bundle %s", threading.current_thread().getName(), bundle_uuid)
+        except (FileNotFoundError, json.decoder.JSONDecodeError):
+            logger.debug("[%s] Fetching manifest for bundle %s", threading.current_thread().getName(), bundle_uuid)
+            res = http.get(f"{self.dss_client.host}/bundles/{bundle_uuid}", params={"replica": "aws"})
+            res.raise_for_status()
+            bundle_manifest = res.json()["bundle"]
+            os.makedirs(f"{self.sd}/bundle_manifests", exist_ok=True)
+            with open(f"{self.sd}/bundle_manifests/{bundle_uuid}.{bundle_version}.json", "w") as fh:
+                json.dump(bundle_manifest, fh)
+
         logger.debug("Scanning bundle %s", bundle_uuid)
         files_to_fetch = []
-        os.makedirs(f"{self.sd}/bundle_manifests", exist_ok=True)
-        with open(f"{self.sd}/bundle_manifests/{bundle_uuid}.{bundle_version}.json", "w") as fh:
-            json.dump(res.json()["bundle"], fh)
-        for f in res.json()["bundle"]["files"]:
+        for f in bundle_manifest["files"]:
             if self.should_fetch_file(f):
                 os.makedirs(f"{self.sd}/bundles/{bundle_uuid}.{bundle_version}", exist_ok=True)
                 try:
-                    with open(f"{self.sd}/files/{f['uuid']}", "rb") as fh:
+                    with open(f"{self.sd}/files/{f['uuid']}.{f['version']}", "rb") as fh:
                         file_csum = hashlib.sha256(fh.read()).hexdigest()
                         if file_csum == f["sha256"]:
                             self.link_file(bundle_uuid, bundle_version, f)
+                            logger.debug("File %s:%s:%s found, skipping", bundle_uuid, bundle_version, f["name"])
                             continue
                 except (FileNotFoundError, ):
                     pass
