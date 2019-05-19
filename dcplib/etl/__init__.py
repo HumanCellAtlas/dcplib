@@ -31,7 +31,6 @@ from hca.util import RetryPolicy
 
 logger = logging.getLogger(__name__)
 
-
 class DSSExtractor:
     default_bundle_query = {'query': {'bool': {'must_not': {'term': {'admin_deleted': True}}}}}
     default_content_type_patterns = ['application/json; dcp-type="metadata*"']
@@ -111,7 +110,6 @@ class DSSExtractor:
                         file_csum = hashlib.sha256(fh.read()).hexdigest()
                         if file_csum == f["sha256"]:
                             self.link_file(bundle_uuid, bundle_version, f)
-                            logger.debug("File %s:%s:%s found, skipping", bundle_uuid, bundle_version, f["name"])
                             continue
                 except (FileNotFoundError, ):
                     pass
