@@ -34,6 +34,7 @@ class HTTPRequest:
                                status_forcelist=frozenset({500, 502, 503, 504}))
     timeout_policy = timeout.Timeout(connect=20, read=40)
     max_redirects = 1024
+    codes = requests.codes
 
     def __init__(self):
         self.sessions = {}

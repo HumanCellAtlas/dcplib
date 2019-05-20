@@ -51,6 +51,7 @@ class TestNetworking(unittest.TestCase):
         res.raise_for_status()
         res = http.get("https://google.com")
         res.raise_for_status()
+        assert res.status_code == http.codes.ok
 
     def test_redirect_with_retry_after(self):
         start_time = time.time()
