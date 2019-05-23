@@ -63,13 +63,14 @@ class DSSExtractor:
     def link_file(self, bundle_uuid, bundle_version, f):
         if not os.path.exists(f"{self.sd}/bundles/{bundle_uuid}.{bundle_version}/{f['name']}"):
             logger.debug("Linking fetched file %s/%s", bundle_uuid, f["name"])
-            os.symlink(f"../../files/{f['uuid']}", f"{self.sd}/bundles/{bundle_uuid}.{bundle_version}/{f['name']}")
+            os.symlink(f"../../files/{f['uuid']}.{f['version']}",
+                       f"{self.sd}/bundles/{bundle_uuid}.{bundle_version}/{f['name']}")
 
     def get_file(self, f, bundle_uuid, bundle_version, print_progress=True):
         logger.debug("[%s] Fetching %s:%s", threading.current_thread().getName(), bundle_uuid, f["name"])
         res = http.get(f"{self.dss_client.host}/files/{f['uuid']}", params={"replica": "aws", "version": f["version"]})
         res.raise_for_status()
-        with open(f"{self.sd}/files/{f['uuid']}", "wb") as fh:
+        with open(f"{self.sd}/files/{f['uuid']}.{f['version']}", "wb") as fh:
             fh.write(res.content)
         self.link_file(bundle_uuid, bundle_version, f)
         logger.debug("Wrote %s:%s", bundle_uuid, f["name"])
@@ -86,19 +87,26 @@ class DSSExtractor:
         return False
 
     def get_files_to_fetch_for_bundle(self, bundle_uuid, bundle_version):
-        logger.debug("[%s] Fetching manifest for bundle %s", threading.current_thread().getName(), bundle_uuid)
-        res = http.get(f"{self.dss_client.host}/bundles/{bundle_uuid}", params={"replica": "aws"})
-        res.raise_for_status()
+        try:
+            with open(f"{self.sd}/bundle_manifests/{bundle_uuid}.{bundle_version}.json") as fh:
+                bundle_manifest = json.load(fh)
+            logger.debug("[%s] Loaded cached manifest for bundle %s", threading.current_thread().getName(), bundle_uuid)
+        except (FileNotFoundError, json.decoder.JSONDecodeError):
+            logger.debug("[%s] Fetching manifest for bundle %s", threading.current_thread().getName(), bundle_uuid)
+            res = http.get(f"{self.dss_client.host}/bundles/{bundle_uuid}", params={"replica": "aws"})
+            res.raise_for_status()
+            bundle_manifest = res.json()["bundle"]
+            os.makedirs(f"{self.sd}/bundle_manifests", exist_ok=True)
+            with open(f"{self.sd}/bundle_manifests/{bundle_uuid}.{bundle_version}.json", "w") as fh:
+                json.dump(bundle_manifest, fh)
+
         logger.debug("Scanning bundle %s", bundle_uuid)
         files_to_fetch = []
-        os.makedirs(f"{self.sd}/bundle_manifests", exist_ok=True)
-        with open(f"{self.sd}/bundle_manifests/{bundle_uuid}.{bundle_version}.json", "w") as fh:
-            json.dump(res.json()["bundle"], fh)
-        for f in res.json()["bundle"]["files"]:
+        for f in bundle_manifest["files"]:
             if self.should_fetch_file(f):
                 os.makedirs(f"{self.sd}/bundles/{bundle_uuid}.{bundle_version}", exist_ok=True)
                 try:
-                    with open(f"{self.sd}/files/{f['uuid']}", "rb") as fh:
+                    with open(f"{self.sd}/files/{f['uuid']}.{f['version']}", "rb") as fh:
                         file_csum = hashlib.sha256(fh.read()).hexdigest()
                         if file_csum == f["sha256"]:
                             self.link_file(bundle_uuid, bundle_version, f)
