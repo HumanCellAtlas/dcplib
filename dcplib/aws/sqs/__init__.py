@@ -11,9 +11,9 @@ class SQSMessenger(AbstractContextManager):
     """
     def __init__(self, queue_url: str):
         self.queue_url = queue_url
-        self.chunk: list = list()
+        self.chunk = list()
 
-    def send(self, body: str, delay_seconds: int=None):
+    def send(self, body: str, delay_seconds: int = None):
         msg: dict = dict(Id=str(uuid4()), MessageBody=body)
         if delay_seconds is not None:
             msg['DelaySeconds'] = delay_seconds
