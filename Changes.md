@@ -1,3 +1,7 @@
+# Changes for v2.0.3 (2019-05-30)
+
+- Add SQS batch context manager (#26)
+
 # Changes for v2.0.2 (2019-05-17)
 
 - Fix erroneous initialization of ETL DSS client
