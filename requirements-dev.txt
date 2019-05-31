@@ -3,6 +3,6 @@ coverage
 furl
 flask
 hca
-moto
+moto==1.3.7
 twine
 -r requirements.txt
