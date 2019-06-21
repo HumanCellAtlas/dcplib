@@ -1,3 +1,4 @@
+import tempfile
 import unittest, io, sys, json, logging, concurrent.futures
 from collections import defaultdict
 from requests.models import Response
@@ -69,12 +70,11 @@ class MockDSSClient:
 
 
 class TestETL(unittest.TestCase):
-    if sys.version_info > (2, 7):
-        import tempfile
-        td = tempfile.TemporaryDirectory()
 
     def setUp(self):
         import dcplib.etl
+        self.td = tempfile.TemporaryDirectory()
+
         dcplib.etl.http = MockDSSClient()
 
         calls["tf"] = 0
