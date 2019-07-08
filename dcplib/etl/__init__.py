@@ -36,6 +36,7 @@ class DSSExtractor:
         self.content_type_patterns = content_type_patterns or self.default_content_type_patterns
         self.filename_patterns = filename_patterns or []
         self._dss_client = dss_client
+        self._dss_client_class = dss_client.__class__ if dss_client else hca.dss.DSSClient
         self._dss_swagger_url = None
         self._dispatch_on_empty_bundles = dispatch_on_empty_bundles
 
@@ -50,7 +51,7 @@ class DSSExtractor:
     @property
     def dss_client(self):
         if self._dss_client is None:
-            self._dss_client = hca.dss.DSSClient(swagger_url=self._dss_swagger_url)
+            self._dss_client = self._dss_client_class(swagger_url=self._dss_swagger_url)
         return self._dss_client
 
     def extract_one(self, bundle_uuid, bundle_version, transformer: callable = None):
