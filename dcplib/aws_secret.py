@@ -25,27 +25,39 @@ class AwsSecret:
 
     @property
     def value(self):
-        if not self.secret_metadata:
-            raise RuntimeError("No such secret")
-        if 'DeletedDate' in self.secret_metadata:
-            raise RuntimeError("This secret is deleted")
-        response = self.secrets_mgr.get_secret_value(SecretId=self.secret_metadata['ARN'])
+        if not self.exists_in_aws:
+            raise RuntimeError("No such secret: {}".format(self.name))
+        if self.is_deleted:
+            raise RuntimeError("Secret {} is deleted".format(self.name))
+        response = self.secrets_mgr.get_secret_value(SecretId=self.arn)
         return response['SecretString']
 
+    @property
+    def exists_in_aws(self):
+        return self.secret_metadata is not None
+
+    @property
+    def is_deleted(self):
+        return self.exists_in_aws and 'DeletedDate' in self.secret_metadata
+
+    @property
+    def arn(self):
+        return self.secret_metadata['ARN']
+
     def update(self, value):
-        if not self.secret_metadata:
+        if not self.exists_in_aws:
             self.secrets_mgr.create_secret(Name=self.name, SecretString=value)
             self._load()
         else:
-            self._restore()
-            self.secrets_mgr.put_secret_value(SecretId=self.secret_metadata['ARN'],
-                                              SecretString=value)
+            if self.is_deleted:
+                self._restore()
+            self.secrets_mgr.put_secret_value(SecretId=self.arn, SecretString=value)
 
     def delete(self):
-        if not self.secret_metadata:
-            raise RuntimeError("No such secret")
-        if 'DeletedDate' not in self.secret_metadata:
-            self.secrets_mgr.delete_secret(SecretId=self.secret_metadata['ARN'])
+        if not self.exists_in_aws:
+            raise RuntimeError("No such secret: {}".format(self.name))
+        if not self.is_deleted:
+            self.secrets_mgr.delete_secret(SecretId=self.arn)
             self._load()
 
     def _load(self):
@@ -58,6 +70,5 @@ class AwsSecret:
                 raise e
 
     def _restore(self):
-        if 'DeletedDate' in self.secret_metadata:
-            self.secrets_mgr.restore_secret(SecretId=self.secret_metadata['ARN'])
-            self._load()
+        self.secrets_mgr.restore_secret(SecretId=self.arn)
+        self._load()
