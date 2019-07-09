@@ -42,7 +42,6 @@ files = [
 
 class MockDSSClient:
     host = "localhost"
-    swagger_url = "swagger_url"
 
     class MockDSSMethod:
         def __call__(self, es_query, replica):
@@ -57,6 +56,9 @@ class MockDSSClient:
                 yield {"results": [{"bundle_fqid": "a%d.b" % i}]}
 
     post_search = MockDSSMethod()
+
+    def __init__(self, swagger_url="swagger_url"):
+        self.swagger_url = swagger_url
 
     def get(self, url, params):
         if "files" in url:
