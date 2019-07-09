@@ -42,7 +42,6 @@ files = [
 
 class MockDSSClient:
     host = "localhost"
-    swagger_url = "swagger_url"
 
     class MockDSSMethod:
         def __call__(self, es_query, replica):
@@ -57,6 +56,9 @@ class MockDSSClient:
                 yield {"results": [{"bundle_fqid": "a%d.b" % i}]}
 
     post_search = MockDSSMethod()
+
+    def __init__(self, swagger_url="swagger_url"):
+        self.swagger_url = swagger_url
 
     def get(self, url, params):
         if "files" in url:
@@ -100,8 +102,7 @@ class TestETL(unittest.TestCase):
         self.assertEqual(calls["ld"], 4)
         self.assertEqual(calls["fn"], 1)
 
-#    @unittest.skipIf(sys.version_info < (3, 6), "Only testing under Python 3.6+")
-    @unittest.skip("TODO: (akislyuk) fix serialization issues in DSSClient")
+    @unittest.skipIf(sys.version_info < (3, 6), "Only testing under Python 3.6+")
     def test_etl_with_dispatcher(self):
         import dcplib.etl
         with tempfile.TemporaryDirectory() as td:
