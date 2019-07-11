@@ -112,6 +112,7 @@ class DSSExtractor:
                 if page_processor is not None:
                     page_processor(extracted_results)
 
+
         if finalizer is not None:
             finalizer(extractor=self)
         end = time.time()
