@@ -69,7 +69,7 @@ class DSSExtractor:
 
             return tb
 
-    def extract(self, query, max_workers=512, max_dispatchers=1,
+    def extract(self, query=None, max_workers=512, max_dispatchers=1,
                 dispatch_executor_class: concurrent.futures.Executor = concurrent.futures.ThreadPoolExecutor,
                 transformer: callable = None, loader: callable = None, finalizer: callable = None):
         start = time.time()
