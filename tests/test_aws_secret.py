@@ -1,9 +1,9 @@
 import sys
 import unittest
+import uuid
+
 
 import boto3
-from botocore.errorfactory import ClientError
-
 
 from dcplib.aws_secret import AwsSecret
 
@@ -11,72 +11,72 @@ from dcplib.aws_secret import AwsSecret
 @unittest.skipIf(sys.version_info < (3, 6), "Only testing under Python 3.6+")
 class TestAwsSecret(unittest.TestCase):
 
-    UNKNOWN_SECRET = 'dcp/test/secret_that_does_not_exist'  # Don't ever create this
-    EXISTING_SECRET = 'dcp/test/test_secret'
-    EXISTING_SECRET_VALUE = '{"top":"secret"}'
+    UNKNOWN_SECRET = 'dcplib/test/secret_that_does_not_exist'  # Don't ever create this
+
+    class ExistingSecretTestFixture:
+
+        SECRET_ID_TEMPLATE = 'dcplib/test/test_secret/{}'
+        EXISTING_SECRET_DEFAULT_VALUE = '{"top":"secret"}'
+
+        def __init__(self):
+            self.secrets_mgr = boto3.client("secretsmanager")
+            self.secret_id = self.SECRET_ID_TEMPLATE.format(uuid.uuid4())
+            self._secret = None
+            self._value = None
+
+        def __enter__(self, secret_value=None):
+            self._value = secret_value or self.EXISTING_SECRET_DEFAULT_VALUE
+            self._secret = self.secrets_mgr.create_secret(Name=self.secret_id,
+                                                          SecretString=self._value)
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            self.delete()
+
+        @property
+        def value(self):
+            return self._value
+
+        @property
+        def arn(self):
+            return self._secret['ARN']
+
+        def delete(self):
+            self.secrets_mgr.delete_secret(SecretId=self.arn, ForceDeleteWithoutRecovery=True)
 
     def setUp(self):
         self.secrets_mgr = boto3.client("secretsmanager")
-
-        # Create an active (non-deleted) secret.
-        secret = None
-        try:
-            secret = self.secrets_mgr.describe_secret(SecretId=self.EXISTING_SECRET)
-            self.secret_arn = secret['ARN']
-        except ClientError as e:
-            if e.response['Error']['Code'] != 'ResourceNotFoundException':
-                raise e
-
-        if not secret:
-            secret = self.secrets_mgr.create_secret(Name=self.EXISTING_SECRET,
-                                                    SecretString=self.EXISTING_SECRET_VALUE)
-            self.secret_arn = secret['ARN']
-        else:
-            if 'DeletedDate' in secret:
-                self.secrets_mgr.restore_secret(SecretId=self.secret_arn)
-
-            self.secrets_mgr.put_secret_value(SecretId=self.secret_arn,
-                                              SecretString=self.EXISTING_SECRET_VALUE)
-
-    def tearDown(self):
-        self.secrets_mgr.delete_secret(SecretId=self.secret_arn)
 
     def test_init_of_unknown_secret_does_not_set_secret_metadata(self):
         secret = AwsSecret(name=self.UNKNOWN_SECRET)
         self.assertEqual(secret.secret_metadata, None)
 
     def test_init_of_existing_secret_retrieves_secret_metadata(self):
-        secret = AwsSecret(name=self.EXISTING_SECRET)
-        self.assertIsNotNone(secret.secret_metadata)
+        with self.ExistingSecretTestFixture() as existing_secret:
+            secret = AwsSecret(name=existing_secret.secret_id)
+            self.assertIsNotNone(secret.secret_metadata)
 
     # value
 
     def test_value_of_unknown_secret_raises_exception(self):
-        secret = AwsSecret(name=self.UNKNOWN_SECRET)
-        with self.assertRaisesRegex(RuntimeError, 'No such'):
-            secret.value  # noqa
+        with self.ExistingSecretTestFixture():
+            secret = AwsSecret(name=self.UNKNOWN_SECRET)
+            with self.assertRaisesRegex(RuntimeError, 'No such'):
+                secret.value  # noqa
 
     def test_value_of_existing_deleted_secret_raises_exception(self):
-        secret = AwsSecret(name=self.EXISTING_SECRET)
-        secret.delete()
-        with self.assertRaisesRegex(RuntimeError, 'deleted'):
-            x =secret.value  # noqa
+        with self.ExistingSecretTestFixture() as existing_secret:
+            secret = AwsSecret(name=existing_secret.secret_id)
+            secret.delete()
+            with self.assertRaisesRegex(RuntimeError, 'deleted'):
+                x = secret.value  # noqa
 
     def test_value_of_existing_secret_returns_value(self):
-        secret = AwsSecret(name=self.EXISTING_SECRET)
-        self.assertEqual(secret.value, self.EXISTING_SECRET_VALUE)
+        with self.ExistingSecretTestFixture() as existing_secret:
+            secret = AwsSecret(name=existing_secret.secret_id)
+            self.assertEqual(secret.value, existing_secret.value)
 
     # update
-
-    # This is hard to test as AWS keeps secrets around after deletion.
-    # If we ran this test twice, next time it would be unknown.
-    # We could mint new secret names ever time, but that will pollute
-    # the secret store with timing out secrets.
-    #
-    # def test_update_of_unknown_secret_creates_secret(self):
-    #     secret = AwsSecret(name=self.UNKNOWN_SECRET)
-    #     secret.update(value='{"foo":"bar"}')
-    #     self.assertIsNotNone(secret.secret_metadata)
 
     def test_delete_of_unknown_secret_raises_exception(self):
         secret = AwsSecret(name=self.UNKNOWN_SECRET)
@@ -84,15 +84,17 @@ class TestAwsSecret(unittest.TestCase):
             secret.delete()
 
     def test_update_of_existing_secret_updates_secret(self):
-        secret = AwsSecret(name=self.EXISTING_SECRET)
-        secret.update(value='{"foo":"bar"}')
-        self.assertEqual(self.secrets_mgr.get_secret_value(SecretId=self.secret_arn)['SecretString'],
-                         '{"foo":"bar"}')
+        with self.ExistingSecretTestFixture() as existing_secret:
+            secret = AwsSecret(name=existing_secret.secret_id)
+            secret.update(value='{"foo":"bar"}')
+            self.assertEqual(self.secrets_mgr.get_secret_value(SecretId=existing_secret.arn)['SecretString'],
+                             '{"foo":"bar"}')
 
     # delete
 
     def test_delete_of_existing_secret_deletes_secret(self):
-        secret = AwsSecret(name=self.EXISTING_SECRET)
-        secret.delete()
-        secret = self.secrets_mgr.describe_secret(SecretId=self.secret_arn)
-        self.assertIn('DeletedDate', secret)
+        with self.ExistingSecretTestFixture() as existing_secret:
+            secret = AwsSecret(name=existing_secret.secret_id)
+            secret.delete()
+            secret = self.secrets_mgr.describe_secret(SecretId=existing_secret.arn)
+            self.assertIn('DeletedDate', secret)
