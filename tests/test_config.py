@@ -5,6 +5,8 @@ try:
 except ImportError:
     from mock import patch
 
+import boto3
+
 from . import EnvironmentSetup, fixture_file_path
 
 from dcplib.aws_secret import AwsSecret
@@ -18,6 +20,20 @@ class BogoComponentConfig(Config):
 
 @unittest.skipIf(sys.version_info < (3, 6), "Only testing under Python 3.6+")
 class TestConfig(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        # AwsSecret.debug_logging = True
+        # To reduce eventual consistency issues, get everyone using the same Secrets Manager session
+        cls.secrets_mgr = boto3.client("secretsmanager")
+        cls.patcher = patch('dcplib.aws_secret.boto3.client')
+        boto3_client = cls.patcher.start()
+        boto3_client.return_value = cls.secrets_mgr
+
+    @classmethod
+    def tearDownClass(cls):
+        AwsSecret.debug_logging = False
+        cls.patcher.stop()
 
     def setUp(self):
         self.aws_secret = AwsSecret(name="dcp/bogo_component/bogo-env/secrets")
@@ -82,7 +98,6 @@ class TestConfig(unittest.TestCase):
     #        yes        |       yes      |       yes      | return env value
 
     def test_when_item_is_not_in_config_not_in_env_we_raise(self):
-        self.aws_secret.update('{}')
         with EnvironmentSetup({
             'CONFIG_SOURCE': None,
         }):
