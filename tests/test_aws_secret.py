@@ -2,6 +2,7 @@ import sys
 import unittest
 import uuid
 
+from mock import patch
 
 import boto3
 
@@ -44,8 +45,17 @@ class TestAwsSecret(unittest.TestCase):
         def delete(self):
             self.secrets_mgr.delete_secret(SecretId=self.arn, ForceDeleteWithoutRecovery=True)
 
-    def setUp(self):
-        self.secrets_mgr = boto3.client("secretsmanager")
+    @classmethod
+    def setUpClass(cls):
+        # To reduce eventual consistency issues, get everyone using the same Secrets Manager session
+        cls.secrets_mgr = boto3.client("secretsmanager")
+        cls.patcher = patch('dcplib.aws_secret.boto3.client')
+        boto3_client = cls.patcher.start()
+        boto3_client.return_value = cls.secrets_mgr
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.patcher.stop()
 
     def test_init_of_unknown_secret_does_not_set_secret_metadata(self):
         secret = AwsSecret(name=self.UNKNOWN_SECRET)
