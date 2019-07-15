@@ -1,5 +1,6 @@
 import sys
 import unittest
+import uuid
 try:
     from unittest.mock import PropertyMock, patch
 except ImportError:
@@ -36,7 +37,8 @@ class TestConfig(unittest.TestCase):
         cls.patcher.stop()
 
     def setUp(self):
-        self.aws_secret = AwsSecret(name="dcp/bogo_component/bogo-env/secrets")
+        self.deployment_env = "bogo_env_{}".format(uuid.uuid4())
+        self.aws_secret = AwsSecret(name="dcp/bogo_component/{}/secrets".format(self.deployment_env))
         self.aws_secret.update('{"secret1":"secret1_from_cloud"}')
         BogoComponentConfig.reset()
 
@@ -47,18 +49,18 @@ class TestConfig(unittest.TestCase):
         with EnvironmentSetup({
             'CONFIG_SOURCE': fixture_file_path('config.js')
         }):
-            config = BogoComponentConfig(deployment='bogo-env')
+            config = BogoComponentConfig(deployment=self.deployment_env)
             self.assertEqual('value_from_file', config.secret1)
 
     def test_from_aws(self):
         with EnvironmentSetup({
             'CONFIG_SOURCE': None
         }):
-            config = BogoComponentConfig(deployment='bogo-env', source='aws')
+            config = BogoComponentConfig(deployment=self.deployment_env, source='aws')
             self.assertEqual('secret1_from_cloud', config.secret1)
 
     def test_custom_secret_name(self):
-        custom_named_secret = AwsSecret(name="dcp/bogo_component/bogo-env/custom-secret-name")
+        custom_named_secret = AwsSecret(name="dcp/bogo_component/{}/custom-secret-name".format(self.deployment_env))
         custom_named_secret.update('{"secret1":"custom"}')
 
         class BogoComponentCustomConfig(Config):
@@ -67,7 +69,7 @@ class TestConfig(unittest.TestCase):
                 super(BogoComponentCustomConfig, self).__init__(
                     'bogo_component', secret_name='custom-secret-name', **kwargs)
 
-        config = BogoComponentCustomConfig(deployment='bogo-env', source='aws')
+        config = BogoComponentCustomConfig(deployment=self.deployment_env, source='aws')
         self.assertEqual('custom', config.secret1)
 
         custom_named_secret.delete()
@@ -77,10 +79,10 @@ class TestConfig(unittest.TestCase):
         value_mock = PropertyMock(return_value='{"secret2": "foo"}')
         type(mock_AwsSecret()).value = value_mock
 
-        config1 = BogoComponentConfig(deployment='bogo-env', source='aws')
+        config1 = BogoComponentConfig(deployment=self.deployment_env, source='aws')
         self.assertEqual('foo', config1.secret2)
 
-        config2 = BogoComponentConfig(deployment='bogo-env', source='aws')
+        config2 = BogoComponentConfig(deployment=self.deployment_env, source='aws')
         self.assertEqual('foo', config2.secret2)
 
         value_mock.assert_called_once()
@@ -102,8 +104,8 @@ class TestConfig(unittest.TestCase):
             'CONFIG_SOURCE': None,
         }):
             with self.assertRaises(RuntimeError):
-                config = BogoComponentConfig(deployment='bogo-env')
-                print(config.secret1)
+                config = BogoComponentConfig(deployment=self.deployment_env)
+                print(config.secret_that_we_never_put_into_config)
 
     def test_when_item_is_not_in_config_but_is_in_env_and_use_env_is_not_set_we_raise(self):
         self.aws_secret.update('{}')
@@ -112,7 +114,7 @@ class TestConfig(unittest.TestCase):
             'SECRET1': 'secret1_from_env'
         }):
             with self.assertRaises(RuntimeError):
-                config = BogoComponentConfig(deployment='bogo-env')
+                config = BogoComponentConfig(deployment=self.deployment_env)
                 print(config.secret1)
 
     def test_when_item_is_not_in_config_but_is_in_env_and_use_env_is_set_we_use_env(self):
@@ -122,14 +124,14 @@ class TestConfig(unittest.TestCase):
             'CONFIG_SOURCE': None,
             'SECRET1': 'secret1_from_env'
         }):
-            config = BogoComponentConfig(deployment='bogo-env')
+            config = BogoComponentConfig(deployment=self.deployment_env)
             self.assertEqual('secret1_from_env', config.secret1)
 
     def test_when_item_is_in_config_but_not_in_env_and_use_env_is_not_set_we_use_config(self):
         with EnvironmentSetup({
             'CONFIG_SOURCE': None,
         }):
-            config = BogoComponentConfig(deployment='bogo-env')
+            config = BogoComponentConfig(deployment=self.deployment_env)
             self.assertEqual('secret1_from_cloud', config.secret1)
 
     def test_when_item_is_in_config_but_not_in_env_and_use_env_is_set_we_use_config(self):
@@ -138,7 +140,7 @@ class TestConfig(unittest.TestCase):
             'CONFIG_SOURCE': None,
             'SECRET1': 'secret1_from_env'
         }):
-            config = BogoComponentConfig(deployment='bogo-env')
+            config = BogoComponentConfig(deployment=self.deployment_env)
             self.assertEqual('secret1_from_env', config.secret1)
 
     def test_when_item_is_in_config_and_is_in_env_and_use_env_is_set_we_use_env(self):
@@ -147,5 +149,5 @@ class TestConfig(unittest.TestCase):
             'CONFIG_SOURCE': None,
             'SECRET1': 'secret1_from_env'
         }):
-            config = BogoComponentConfig(deployment='bogo-env')
+            config = BogoComponentConfig(deployment=self.deployment_env)
             self.assertEqual('secret1_from_env', config.secret1)
