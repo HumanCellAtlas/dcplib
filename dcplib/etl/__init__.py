@@ -21,7 +21,7 @@ import os, sys, json, concurrent.futures, hashlib, logging, threading, time
 from fnmatch import fnmatchcase
 
 import hca
-from ..networking import http
+from ..networking import HTTPRequest
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,8 @@ class DSSExtractor:
     default_content_type_patterns = ['application/json; dcp-type="metadata*"']
 
     def __init__(self, staging_directory, content_type_patterns: list = None, filename_patterns: list = None,
-                 dss_client: hca.dss.DSSClient = None, dispatch_on_empty_bundles=False):
+                 dss_client: hca.dss.DSSClient = None, http_client: HTTPRequest = None,
+                 dispatch_on_empty_bundles=False):
         self.sd = staging_directory
         self.content_type_patterns = content_type_patterns or self.default_content_type_patterns
         self.filename_patterns = filename_patterns or []
@@ -39,6 +40,7 @@ class DSSExtractor:
         self._dss_client_class = dss_client.__class__ if dss_client else hca.dss.DSSClient
         self._dss_swagger_url = None
         self._dispatch_on_empty_bundles = dispatch_on_empty_bundles
+        self._http = http_client
 
     # concurrent.futures.ProcessPoolExecutor requires objects to be picklable.
     # hca.dss.DSSClient is unpicklable and is stubbed out here to preserve DSSExtractor's picklability.
@@ -109,7 +111,7 @@ class DSSExtractor:
             logger.debug("[%s] Loaded cached manifest for bundle %s", threading.current_thread().getName(), bundle_uuid)
         except (FileNotFoundError, json.decoder.JSONDecodeError):
             logger.debug("[%s] Fetching manifest for bundle %s", threading.current_thread().getName(), bundle_uuid)
-            res = http.get(f"{self.dss_client.host}/bundles/{bundle_uuid}", params={"replica": "aws"})
+            res = self._http.get(f"{self.dss_client.host}/bundles/{bundle_uuid}", params={"replica": "aws"})
             res.raise_for_status()
             bundle_manifest = res.json()["bundle"]
             os.makedirs(f"{self.sd}/bundle_manifests", exist_ok=True)
@@ -152,7 +154,8 @@ class DSSExtractor:
 
     def _get_file(self, f, bundle_uuid, bundle_version, print_progress=True):
         logger.debug("[%s] Fetching %s:%s", threading.current_thread().getName(), bundle_uuid, f["name"])
-        res = http.get(f"{self.dss_client.host}/files/{f['uuid']}", params={"replica": "aws", "version": f["version"]})
+        res = self._http.get(f"{self.dss_client.host}/files/{f['uuid']}",
+                             params={"replica": "aws", "version": f["version"]})
         res.raise_for_status()
         with open(f"{self.sd}/files/{f['uuid']}.{f['version']}", "wb") as fh:
             fh.write(res.content)
