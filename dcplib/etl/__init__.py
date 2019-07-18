@@ -32,7 +32,7 @@ class DSSExtractor:
 
     def __init__(self, staging_directory, content_type_patterns: list = None, filename_patterns: list = None,
                  dss_client: hca.dss.DSSClient = None, http_client: HTTPRequest = None,
-                 dispatch_on_empty_bundles=False, continue_on_load_error=False):
+                 dispatch_on_empty_bundles=False, continue_on_bundle_extract_errors=False):
         self.sd = staging_directory
         self.content_type_patterns = content_type_patterns or self.default_content_type_patterns
         self.filename_patterns = filename_patterns or []
