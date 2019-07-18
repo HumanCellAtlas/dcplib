@@ -17,7 +17,7 @@ Example usage:
     DSSExtractor(staging_directory=".").extract(transformer=tf, loader=ld, finalizer=fn)
 """
 
-import os, sys, json, concurrent.futures, hashlib, logging, threading, time
+import os, sys, json, concurrent.futures, hashlib, logging, threading, time, traceback
 from fnmatch import fnmatchcase
 
 import hca
@@ -32,7 +32,7 @@ class DSSExtractor:
 
     def __init__(self, staging_directory, content_type_patterns: list = None, filename_patterns: list = None,
                  dss_client: hca.dss.DSSClient = None, http_client: HTTPRequest = None,
-                 dispatch_on_empty_bundles=False):
+                 dispatch_on_empty_bundles=False, continue_on_load_error=False):
         self.sd = staging_directory
         self.content_type_patterns = content_type_patterns or self.default_content_type_patterns
         self.filename_patterns = filename_patterns or []
@@ -40,6 +40,7 @@ class DSSExtractor:
         self._dss_client_class = dss_client.__class__ if dss_client else hca.dss.DSSClient
         self._dss_swagger_url = None
         self._dispatch_on_empty_bundles = dispatch_on_empty_bundles
+        self._continue_on_load_error = continue_on_load_error
         self._http = http_client or HTTPRequest()
 
     # concurrent.futures.ProcessPoolExecutor requires objects to be picklable.
@@ -95,7 +96,16 @@ class DSSExtractor:
 
                 if loader is not None:
                     for future in concurrent.futures.as_completed(futures):
-                        loader(bundle=future.result())
+                        try:
+                            extract_result = future.result()
+                        except Exception as e:
+                            logger.error("Error while loading bundle %s:", bundle_uuid)
+                            if self._continue_on_load_error:
+                                raise
+                            else:
+                                traceback.print_tb(e.__traceback__)
+                                continue
+                        loader(bundle=extract_result)
                         loaded_bundle_count += 1
 
         if finalizer is not None:
