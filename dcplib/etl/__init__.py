@@ -41,7 +41,7 @@ class DSSExtractor:
         self._dss_swagger_url = None
         self._dispatch_on_empty_bundles = dispatch_on_empty_bundles
         self._continue_on_bundle_extract_errors = continue_on_bundle_extract_errors
-        self._http = http_client
+        self._http = http_client or HTTPRequest()
 
     # concurrent.futures.ProcessPoolExecutor requires objects to be picklable.
     # hca.dss.DSSClient is unpicklable and is stubbed out here to preserve DSSExtractor's picklability.
