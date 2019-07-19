@@ -102,10 +102,10 @@ class DSSExtractor:
                         except Exception as e:
                             logger.error("Error while extracting/transforming bundle %s:", bundle_uuid)
                             if self._continue_on_bundle_extract_errors:
-                                raise
-                            else:
                                 traceback.print_tb(e.__traceback__)
                                 continue
+                            else:
+                                raise
                         loader(bundle=extract_result)
                         loaded_bundle_count += 1
 
