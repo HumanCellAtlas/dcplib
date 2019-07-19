@@ -98,8 +98,9 @@ class DSSExtractor:
                     for future in concurrent.futures.as_completed(futures):
                         try:
                             extract_result = future.result()
+                            assert extract_result is not None
                         except Exception as e:
-                            logger.error("Error while loading bundle %s:", bundle_uuid)
+                            logger.error("Error while extracting/transforming bundle %s:", bundle_uuid)
                             if self._continue_on_bundle_extract_errors:
                                 raise
                             else:
