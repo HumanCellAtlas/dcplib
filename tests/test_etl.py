@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import tempfile
 import unittest, io, sys, json, logging, concurrent.futures
 from collections import defaultdict
@@ -41,7 +42,7 @@ files = [
 
 
 class MockDSSClient:
-    host = "http://localhost"
+    host = "localhost"
 
     class MockDSSMethod:
         def __call__(self, es_query, replica):
@@ -74,9 +75,6 @@ class MockDSSClient:
 class TestETL(unittest.TestCase):
 
     def setUp(self):
-        import dcplib.etl
-        dcplib.etl.http = MockDSSClient()
-
         calls["tf"] = 0
         calls["fn"] = 0
         calls["ld"] = 0
@@ -90,7 +88,8 @@ class TestETL(unittest.TestCase):
                 staging_directory=td,
                 content_type_patterns=["application/json"],
                 filename_patterns=["*.json"],
-                dss_client=MockDSSClient()
+                dss_client=MockDSSClient(),
+                http_client=MockDSSClient()
             )
             e.extract(query={"test": True},
                       max_workers=2,
@@ -110,7 +109,8 @@ class TestETL(unittest.TestCase):
             e = dcplib.etl.DSSExtractor(staging_directory=td,
                                         content_type_patterns=["application/json"],
                                         filename_patterns=["*.json"],
-                                        dss_client=MockDSSClient()
+                                        dss_client=MockDSSClient(),
+                                        http_client=MockDSSClient()
                                         )
             e.extract(
                 query={"test": True},
@@ -133,7 +133,8 @@ class TestETL(unittest.TestCase):
             e = dcplib.etl.DSSExtractor(staging_directory=td,
                                         content_type_patterns=["application/json"],
                                         filename_patterns=["*.json"],
-                                        dss_client=MockDSSClient()
+                                        dss_client=MockDSSClient(),
+                                        http_client=MockDSSClient()
                                         )
             with self.assertRaises(TestETLException):
                 e.extract(query={"test": True},
@@ -153,6 +154,7 @@ class TestETL(unittest.TestCase):
                                         content_type_patterns=["application/json"],
                                         filename_patterns=["*.json"],
                                         dss_client=MockDSSClient(),
+                                        http_client=MockDSSClient(),
                                         dispatch_on_empty_bundles=True
                                         )
 
