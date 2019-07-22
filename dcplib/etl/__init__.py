@@ -17,7 +17,7 @@ Example usage:
     DSSExtractor(staging_directory=".").extract(transformer=tf, loader=ld, finalizer=fn)
 """
 
-import os, sys, json, concurrent.futures, hashlib, logging, threading, time
+import os, sys, json, concurrent.futures, hashlib, logging, threading, time, traceback
 from fnmatch import fnmatchcase
 
 import hca
@@ -31,7 +31,8 @@ class DSSExtractor:
     default_content_type_patterns = ['application/json; dcp-type="metadata*"']
 
     def __init__(self, staging_directory, content_type_patterns: list = None, filename_patterns: list = None,
-                 dss_client: hca.dss.DSSClient = None, dispatch_on_empty_bundles=False):
+                 dss_client: hca.dss.DSSClient = None,
+                 dispatch_on_empty_bundles=False, continue_on_bundle_extract_errors=False):
         self.sd = staging_directory
         self.content_type_patterns = content_type_patterns or self.default_content_type_patterns
         self.filename_patterns = filename_patterns or []
@@ -39,6 +40,7 @@ class DSSExtractor:
         self._dss_client_class = dss_client.__class__ if dss_client else hca.dss.DSSClient
         self._dss_swagger_url = None
         self._dispatch_on_empty_bundles = dispatch_on_empty_bundles
+        self._continue_on_bundle_extract_errors = continue_on_bundle_extract_errors
 
     # concurrent.futures.ProcessPoolExecutor requires objects to be picklable.
     # hca.dss.DSSClient is unpicklable and is stubbed out here to preserve DSSExtractor's picklability.
@@ -54,7 +56,7 @@ class DSSExtractor:
             self._dss_client = self._dss_client_class(swagger_url=self._dss_swagger_url)
         return self._dss_client
 
-    def extract_one(self, bundle_uuid, bundle_version, transformer: callable = None):
+    def extract_transform_one(self, bundle_uuid, bundle_version, transformer: callable = None):
         bundle_uuid, bundle_version, fetched_files = self.get_files_to_fetch_for_bundle(bundle_uuid, bundle_version)
         bundle_path = f"{self.sd}/bundles/{bundle_uuid}.{bundle_version}"
         bundle_manifest_path = f"{self.sd}/bundle_manifests/{bundle_uuid}.{bundle_version}.json"
@@ -80,26 +82,36 @@ class DSSExtractor:
             logger.error("No bundles found, nothing to do")
             return
         logger.info("Scanning %s bundles", total_bundles)
-        loaded_bundle_count = 0
+        extracted_bundle_count = 0
         with dispatch_executor_class(max_workers=max_workers) as executor:
             for page in self.dss_client.post_search.paginate(es_query=query, replica="aws", per_page=500):
-                if loaded_bundle_count % 100 == 0:
-                    logger.info(f"\nLoading bundles: {loaded_bundle_count} loaded so far. "
-                                f"{round(100*(loaded_bundle_count/total_bundles))}% of bundles loaded")
+                if extracted_bundle_count % 100 == 0:
+                    msg = f"Extracted bundles: {extracted_bundle_count} ({extracted_bundle_count/total_bundles:.1%})"
+                    logger.info(msg)
                 futures = []
                 for bundle in page['results']:
                     bundle_uuid, bundle_version = bundle["bundle_fqid"].split(".", 1)
-                    futures.append(executor.submit(self.extract_one, bundle_uuid, bundle_version, transformer))
+                    f = executor.submit(self.extract_transform_one, bundle_uuid, bundle_version, transformer)
+                    futures.append(f)
 
-                if loader is not None:
-                    for future in concurrent.futures.as_completed(futures):
-                        loader(bundle=future.result())
-                        loaded_bundle_count += 1
+                for future in concurrent.futures.as_completed(futures):
+                    try:
+                        extract_result = future.result()
+                        extracted_bundle_count += 1
+                    except Exception as e:
+                        logger.error("Error while extracting bundle %s:", bundle_uuid)
+                        if self._continue_on_bundle_extract_errors:
+                            traceback.print_tb(e.__traceback__)
+                            continue
+                        else:
+                            raise
+                    if loader is not None and extract_result is not None:
+                        loader(bundle=extract_result)
 
         if finalizer is not None:
             finalizer(extractor=self)
         end = time.time()
-        logger.info(f"Loaded {loaded_bundle_count} bundles in {round(end - start)} seconds!")
+        logger.info(f"Processed {extracted_bundle_count} bundles in {round(end - start)} seconds")
 
     def get_files_to_fetch_for_bundle(self, bundle_uuid, bundle_version):
         # get the bundle manifest and store in file system
