@@ -130,7 +130,7 @@ class DSSExtractor:
                 json.dump(bundle_manifest, fh)
 
         logger.debug("Scanning bundle %s", bundle_uuid)
-        fetched_files = []
+        fetched_files, fetch_file_errors = [], []
         # For each file in the bundle, check if it has been fetched, validate the checksum, and link it in the bundle
         # directory. Otherwise, call _get_file() to fetch it.
         for f in bundle_manifest["files"]:
@@ -144,10 +144,16 @@ class DSSExtractor:
                             self._link_file(bundle_uuid, bundle_version, f)
                             continue
                 except (FileNotFoundError,):
-                    self._get_file(f, bundle_uuid, bundle_version)
-                    fetched_files.append(f)
+                    try:
+                        self._get_file(f, bundle_uuid, bundle_version)
+                        fetched_files.append(f)
+                    except Exception as e:
+                        logger.error(f"Error while fetching file {f['uuid']}.{f['version']}: %s", e)
+                        fetch_file_errors.append(e)
             else:
                 logger.debug("Skipping file %s/%s (no filter match)", bundle_uuid, f["name"])
+            for e in fetch_file_errors:
+                raise e
         return bundle_uuid, bundle_version, fetched_files
 
     def _should_fetch_file(self, f):
