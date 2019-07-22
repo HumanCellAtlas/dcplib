@@ -99,12 +99,13 @@ class DSSExtractor:
                         extract_result = future.result()
                         extracted_bundle_count += 1
                     except Exception as e:
-                        logger.error("Error while extracting bundle %s:", bundle_uuid)
                         if self._continue_on_bundle_extract_errors:
-                            traceback.print_tb(e.__traceback__)
-                            continue
-                        else:
-                            raise
+                            logger.error("Error while extracting bundle %s:", bundle_uuid)
+                            if self._continue_on_bundle_extract_errors:
+                                traceback.print_tb(e.__traceback__)
+                                continue
+                            else:
+                                raise
                     if loader is not None and extract_result is not None:
                         loader(bundle=extract_result)
 
