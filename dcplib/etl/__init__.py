@@ -42,6 +42,8 @@ class DSSExtractor:
         self._dispatch_on_empty_bundles = dispatch_on_empty_bundles
         self._continue_on_bundle_extract_errors = continue_on_bundle_extract_errors
         self._http = http_client or HTTPRequest()
+        os.makedirs(self.sd, exist_ok=True)
+        self.log_fh = open(os.path.join(self.sd, "errors.log"), "w")
 
     # concurrent.futures.ProcessPoolExecutor requires objects to be picklable.
     # hca.dss.DSSClient is unpicklable and is stubbed out here to preserve DSSExtractor's picklability.
@@ -83,7 +85,7 @@ class DSSExtractor:
             logger.error("No bundles found, nothing to do")
             return
         logger.info("Scanning %s bundles", total_bundles)
-        extracted_bundle_count = 0
+        extracted_bundle_count, error_bundle_count = 0, 0
         with dispatch_executor_class(max_workers=max_workers) as executor:
             for page in self.dss_client.post_search.paginate(es_query=query, replica="aws", per_page=500):
                 if extracted_bundle_count % 100 == 0:
@@ -100,9 +102,9 @@ class DSSExtractor:
                         extract_result = future.result()
                         extracted_bundle_count += 1
                     except Exception as e:
-                        logger.error("Error while extracting bundle %s:", bundle_uuid)
+                        error_bundle_count += 1
                         if self._continue_on_bundle_extract_errors:
-                            traceback.print_tb(e.__traceback__)
+                            traceback.print_tb(e.__traceback__, file=self.log_fh)
                             continue
                         else:
                             raise
@@ -111,8 +113,11 @@ class DSSExtractor:
 
         if finalizer is not None:
             finalizer(extractor=self)
+        self.log_fh.close()
         end = time.time()
         logger.info(f"Processed {extracted_bundle_count} bundles in {round(end - start)} seconds")
+        logger.info(f"Successfully extracted {extracted_bundle_count} bundles")
+        logger.info(f"Failures in {error_bundle_count} bundles (see {self.log_fh.name})")
 
     def get_files_to_fetch_for_bundle(self, bundle_uuid, bundle_version):
         # get the bundle manifest and store in file system
