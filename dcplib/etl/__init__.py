@@ -115,7 +115,7 @@ class DSSExtractor:
             finalizer(extractor=self)
         self.log_fh.close()
         end = time.time()
-        logger.info(f"Processed {extracted_bundle_count} bundles in {round(end - start)} seconds")
+        logger.info(f"Processed {total_bundles} bundles in {round(end - start)} seconds")
         logger.info(f"Successfully extracted {extracted_bundle_count} bundles")
         logger.info(f"Failures in {error_bundle_count} bundles (see {self.log_fh.name})")
 
@@ -153,7 +153,7 @@ class DSSExtractor:
                         self._get_file(f, bundle_uuid, bundle_version)
                         fetched_files.append(f)
                     except Exception as e:
-                        logger.error(f"Error while fetching file {f['uuid']}.{f['version']}: %s", e)
+                        logger.debug(f"Error while fetching file {f['uuid']}.{f['version']}: %s", e)
                         fetch_file_errors.append(e)
             else:
                 logger.debug("Skipping file %s/%s (no filter match)", bundle_uuid, f["name"])
