@@ -41,7 +41,7 @@ files = [
 
 
 class MockDSSClient:
-    host = "localhost"
+    host = "http://localhost"
 
     class MockDSSMethod:
         def __call__(self, es_query, replica):
