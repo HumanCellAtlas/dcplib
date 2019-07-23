@@ -109,11 +109,10 @@ class DSSExtractor:
 
         if finalizer is not None:
             finalizer(extractor=self)
-        self.log_fh.close()
         end = time.time()
         logger.info(f"Processed {total_bundles} bundles in {round(end - start)} seconds")
         logger.info(f"Successfully extracted {extracted_bundle_count} bundles")
-        logger.info(f"Failures in {error_bundle_count} bundles (see {self.log_fh.name})")
+        logger.info(f"Failures in {error_bundle_count} bundles (see {self.sd}/errors)")
 
     def get_files_to_fetch_for_bundle(self, bundle_uuid, bundle_version):
         # get the bundle manifest and store in file system
