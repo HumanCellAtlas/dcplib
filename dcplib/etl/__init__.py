@@ -87,7 +87,7 @@ class DSSExtractor:
         with dispatch_executor_class(max_workers=max_workers) as executor:
             for page in self.dss_client.post_search.paginate(es_query=query, replica="aws", per_page=500):
                 logger.info(f"Extracted bundles: {extracted_bundle_count} "
-                            "({extracted_bundle_count/total_bundles:.1%}, {error_bundle_count} errors)")
+                            f"({extracted_bundle_count/total_bundles:.1%}, {error_bundle_count} errors)")
                 futures = []
                 for bundle in page['results']:
                     bundle_uuid, bundle_version = bundle["bundle_fqid"].split(".", 1)
