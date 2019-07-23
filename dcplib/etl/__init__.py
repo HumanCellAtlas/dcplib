@@ -42,8 +42,6 @@ class DSSExtractor:
         self._dispatch_on_empty_bundles = dispatch_on_empty_bundles
         self._continue_on_bundle_extract_errors = continue_on_bundle_extract_errors
         self._http = http_client or HTTPRequest()
-        os.makedirs(self.sd, exist_ok=True)
-        self.log_fh = open(os.path.join(self.sd, "errors.log"), "w")
 
     # concurrent.futures.ProcessPoolExecutor requires objects to be picklable.
     # hca.dss.DSSClient is unpicklable and is stubbed out here to preserve DSSExtractor's picklability.
@@ -88,7 +86,8 @@ class DSSExtractor:
         extracted_bundle_count, error_bundle_count = 0, 0
         with dispatch_executor_class(max_workers=max_workers) as executor:
             for page in self.dss_client.post_search.paginate(es_query=query, replica="aws", per_page=500):
-                logger.info(f"Extracted bundles: {extracted_bundle_count} ({extracted_bundle_count/total_bundles:.1%})")
+                logger.info(f"Extracted bundles: {extracted_bundle_count} "
+                            "({extracted_bundle_count/total_bundles:.1%}, {error_bundle_count} errors)")
                 futures = []
                 for bundle in page['results']:
                     bundle_uuid, bundle_version = bundle["bundle_fqid"].split(".", 1)
@@ -102,7 +101,6 @@ class DSSExtractor:
                     except Exception as e:
                         error_bundle_count += 1
                         if self._continue_on_bundle_extract_errors:
-                            traceback.print_tb(e.__traceback__, file=self.log_fh)
                             continue
                         else:
                             raise
@@ -140,6 +138,7 @@ class DSSExtractor:
             if self._should_fetch_file(f):
                 os.makedirs(f"{self.sd}/bundles/{bundle_uuid}.{bundle_version}", exist_ok=True)
                 os.makedirs(f"{self.sd}/files/{bundle_uuid}.{bundle_version}", exist_ok=True)
+                os.makedirs(f"{self.sd}/errors", exist_ok=True)
                 try:
                     with open(f"{self.sd}/files/{f['uuid']}.{f['version']}", "rb") as fh:
                         file_csum = hashlib.sha256(fh.read()).hexdigest()
@@ -176,7 +175,13 @@ class DSSExtractor:
         logger.debug("[%s] Fetching %s:%s", threading.current_thread().getName(), bundle_uuid, f["name"])
         res = self._http.get(f"{self.dss_client.host}/files/{f['uuid']}",
                              params={"replica": "aws", "version": f["version"]})
-        res.raise_for_status()
+        try:
+            res.raise_for_status()
+        except Exception as e:
+            with open(f"{self.sd}/errors/{threading.current_thread().getName()}.log", "a") as fh:
+                print(f"{bundle_uuid}.{bundle_version}/{f['uuid']}.{f['version']} {f['name']}", file=fh)
+                traceback.print_tb(e.__traceback__, file=fh)
+            raise
         with open(f"{self.sd}/files/{f['uuid']}.{f['version']}", "wb") as fh:
             fh.write(res.content)
         self._link_file(bundle_uuid, bundle_version, f)
