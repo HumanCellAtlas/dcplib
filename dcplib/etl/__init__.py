@@ -123,7 +123,13 @@ class DSSExtractor:
         except (FileNotFoundError, json.decoder.JSONDecodeError):
             logger.debug("[%s] Fetching manifest for bundle %s", threading.current_thread().getName(), bundle_uuid)
             res = self._http.get(f"{self.dss_client.host}/bundles/{bundle_uuid}", params={"replica": "aws"})
-            res.raise_for_status()
+            try:
+                res.raise_for_status()
+            except Exception as e:
+                with open(f"{self.sd}/errors/{threading.current_thread().getName()}.log", "a") as fh:
+                    traceback.print_tb(e.__traceback__, file=fh)
+                    print(f"{bundle_uuid}.{bundle_version} {type(e)} {str(e)}", file=fh)
+                raise
             bundle_manifest = res.json()["bundle"]
             os.makedirs(f"{self.sd}/bundle_manifests", exist_ok=True)
             with open(f"{self.sd}/bundle_manifests/{bundle_uuid}.{bundle_version}.json", "w") as fh:
@@ -178,8 +184,8 @@ class DSSExtractor:
             res.raise_for_status()
         except Exception as e:
             with open(f"{self.sd}/errors/{threading.current_thread().getName()}.log", "a") as fh:
-                print(f"{bundle_uuid}.{bundle_version}/{f['uuid']}.{f['version']} {f['name']}", file=fh)
                 traceback.print_tb(e.__traceback__, file=fh)
+                print(f"{bundle_uuid}.{bundle_version}/{f['uuid']}.{f['version']} {f['name']}", file=fh)
             raise
         with open(f"{self.sd}/files/{f['uuid']}.{f['version']}", "wb") as fh:
             fh.write(res.content)
