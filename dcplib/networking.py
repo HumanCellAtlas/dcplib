@@ -12,6 +12,10 @@ from requests.packages.urllib3.util import retry, timeout
 logger = logging.getLogger(__name__)
 
 class Session(requests.Session):
+    """
+    The purpose of this class is to patch Requests to obey Retry-After headers on redirect (300 series) HTTP responses.
+    See https://github.com/HumanCellAtlas/dcp-cli/pull/341 for more information.
+    """
     obey_retry_after = True
     def resolve_redirects(self, resp, req, **kwargs):
         if self.obey_retry_after and self.get_redirect_target(resp) and "Retry-After" in resp.headers:
