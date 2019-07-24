@@ -41,7 +41,19 @@ files = [
 ]
 
 
-class MockDSSClient:
+class MockHTTPClient:
+    def get(self, url, params):
+        if "files" in url:
+            payload = {}
+        else:
+            payload = {"bundle": {"files": files}}
+        res = Response()
+        res.status_code = 200
+        res.raw = io.BytesIO(json.dumps(payload).encode())
+        return res
+
+
+class MockDSSClient(MockHTTPClient):
     host = "localhost"
 
     class MockDSSMethod:
@@ -61,16 +73,6 @@ class MockDSSClient:
     def __init__(self, swagger_url="swagger_url"):
         self.swagger_url = swagger_url
 
-    def get(self, url, params):
-        if "files" in url:
-            payload = {}
-        else:
-            payload = {"bundle": {"files": files}}
-        res = Response()
-        res.status_code = 200
-        res.raw = io.BytesIO(json.dumps(payload).encode())
-        return res
-
 
 class TestETL(unittest.TestCase):
 
@@ -89,7 +91,7 @@ class TestETL(unittest.TestCase):
                 content_type_patterns=["application/json"],
                 filename_patterns=["*.json"],
                 dss_client=MockDSSClient(),
-                http_client=MockDSSClient()
+                http_client=MockHTTPClient()
             )
             e.extract(query={"test": True},
                       max_workers=2,
@@ -110,7 +112,7 @@ class TestETL(unittest.TestCase):
                                         content_type_patterns=["application/json"],
                                         filename_patterns=["*.json"],
                                         dss_client=MockDSSClient(),
-                                        http_client=MockDSSClient()
+                                        http_client=MockHTTPClient()
                                         )
             e.extract(
                 query={"test": True},
@@ -134,7 +136,7 @@ class TestETL(unittest.TestCase):
                                         content_type_patterns=["application/json"],
                                         filename_patterns=["*.json"],
                                         dss_client=MockDSSClient(),
-                                        http_client=MockDSSClient()
+                                        http_client=MockHTTPClient()
                                         )
             with self.assertRaises(TestETLException):
                 e.extract(query={"test": True},
@@ -154,7 +156,7 @@ class TestETL(unittest.TestCase):
                                         content_type_patterns=["application/json"],
                                         filename_patterns=["*.json"],
                                         dss_client=MockDSSClient(),
-                                        http_client=MockDSSClient(),
+                                        http_client=MockHTTPClient(),
                                         dispatch_on_empty_bundles=True
                                         )
 
