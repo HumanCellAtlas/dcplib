@@ -124,6 +124,10 @@ class DSSExtractor:
             res = http.get(f"{self.dss_client.host}/bundles/{bundle_uuid}", params={"replica": "aws"})
             res.raise_for_status()
             bundle_manifest = res.json()["bundle"]
+            while res.links.get("next", {}).get("url"):
+                res = http.get(res.links["next"]["url"], params={"replica": "aws"})
+                res.raise_for_status()
+                bundle_manifest["files"].extend(res.json()["bundle"]["files"])
             os.makedirs(f"{self.sd}/bundle_manifests", exist_ok=True)
             with open(f"{self.sd}/bundle_manifests/{bundle_uuid}.{bundle_version}.json", "w") as fh:
                 json.dump(bundle_manifest, fh)
