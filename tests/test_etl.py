@@ -150,15 +150,7 @@ class TestETL(unittest.TestCase):
                                         http_client=MockHTTPClient())
             e._http.status_code = 500
             e.extract(query={"test": True})
-            e.continue_on_bundle_extract_errors = False
-            e.extract(query={"test": True})  # Hits file cache
-
-        with tempfile.TemporaryDirectory() as td3:
-            e = dcplib.etl.DSSExtractor(staging_directory=td3,
-                                        continue_on_bundle_extract_errors=False,
-                                        dss_client=MockDSSClient(),
-                                        http_client=MockHTTPClient())
-            e._http.status_code = requests.codes.server_error
+            e._continue_on_bundle_extract_errors = False
             with self.assertRaises(requests.exceptions.HTTPError):
                 e.extract(query={"test": True})
 
