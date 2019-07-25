@@ -1,3 +1,13 @@
+# Changes for v2.1.0 (2019-07-24)
+
+- ETL: fetch all pages for GET bundle (#39)
+
+- AwsSecret: add debug prints; add methods exists_in_aws and is_deleted
+
+- Refactor ETL (DSSExtractor) (#28)
+
+- Test fixes
+
 # Changes for v2.0.3 (2019-05-30)
 
 - Add SQS batch context manager (#26)
