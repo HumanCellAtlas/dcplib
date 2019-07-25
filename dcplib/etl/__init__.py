@@ -42,6 +42,7 @@ class DSSExtractor:
         self._dispatch_on_empty_bundles = dispatch_on_empty_bundles
         self._continue_on_bundle_extract_errors = continue_on_bundle_extract_errors
         self._http = http_client or HTTPRequest()
+        os.makedirs(f"{self.sd}/errors", exist_ok=True)
 
     # concurrent.futures.ProcessPoolExecutor requires objects to be picklable.
     # hca.dss.DSSClient is unpicklable and is stubbed out here to preserve DSSExtractor's picklability.
@@ -143,7 +144,6 @@ class DSSExtractor:
             if self._should_fetch_file(f):
                 os.makedirs(f"{self.sd}/bundles/{bundle_uuid}.{bundle_version}", exist_ok=True)
                 os.makedirs(f"{self.sd}/files/{bundle_uuid}.{bundle_version}", exist_ok=True)
-                os.makedirs(f"{self.sd}/errors", exist_ok=True)
                 try:
                     with open(f"{self.sd}/files/{f['uuid']}.{f['version']}", "rb") as fh:
                         file_csum = hashlib.sha256(fh.read()).hexdigest()
