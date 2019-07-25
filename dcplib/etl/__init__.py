@@ -98,7 +98,7 @@ class DSSExtractor:
                     try:
                         extract_result = future.result()
                         extracted_bundle_count += 1
-                    except Exception as e:
+                    except Exception:
                         error_bundle_count += 1
                         if self._continue_on_bundle_extract_errors:
                             continue
