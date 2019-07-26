@@ -1,3 +1,7 @@
+# Changes for v2.1.1 (2019-07-25)
+
+- ETL: make retry-after behavior configurable; improve logging (#36)
+
 # Changes for v2.1.0 (2019-07-24)
 
 - ETL: fetch all pages for GET bundle (#39)
