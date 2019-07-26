@@ -1,3 +1,7 @@
+# Changes for v2.1.2 (2019-07-26)
+
+- dcpquery.etl.DSSExtractor.get_file is public
+
 # Changes for v2.1.1 (2019-07-25)
 
 - ETL: make retry-after behavior configurable; improve logging (#36)
