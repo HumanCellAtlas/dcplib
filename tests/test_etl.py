@@ -197,6 +197,24 @@ class TestETL(unittest.TestCase):
         self.assertEqual(calls["fn"], 1)
         self.assertEqual(calls["pp"], 4)
 
+    @unittest.skipIf(sys.version_info < (3, 6), "Only testing under Python 3.6+")
+    def test_etl_handles_empty_bundles(self):
+        import dcplib.etl
+        with tempfile.TemporaryDirectory() as td:
+            e = dcplib.etl.DSSExtractor(staging_directory=td,
+                                        # simulate an empty bundle by not loading any files
+                                        content_type_patterns=["NOTHING/NOTHING"],
+                                        filename_patterns=["*.not_real"],
+                                        dss_client=MockDSSClient(),
+                                        http_client=MockHTTPClient(),
+                                        dispatch_on_empty_bundles=False
+                                        )
+
+            e.extract(query={"test": True}, max_workers=2, transformer=tf, loader=ld, finalizer=fn, page_size=2)
+        self.assertEqual(calls["tf"], 0)
+        self.assertEqual(calls["ld"], 0)
+        self.assertEqual(calls["fn"], 1)
+
 
 if __name__ == '__main__':
     unittest.main()
