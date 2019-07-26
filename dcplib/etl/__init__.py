@@ -21,7 +21,7 @@ import os, sys, json, concurrent.futures, hashlib, logging, threading, time, tra
 from fnmatch import fnmatchcase
 
 import hca
-from ..networking import http
+from ..networking import HTTPRequest
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class DSSExtractor:
     default_content_type_patterns = ['application/json; dcp-type="metadata*"']
 
     def __init__(self, staging_directory, content_type_patterns: list = None, filename_patterns: list = None,
-                 dss_client: hca.dss.DSSClient = None,
+                 dss_client: hca.dss.DSSClient = None, http_client: HTTPRequest = None,
                  dispatch_on_empty_bundles=False, continue_on_bundle_extract_errors=False):
         self.sd = staging_directory
         self.content_type_patterns = content_type_patterns or self.default_content_type_patterns
@@ -41,6 +41,8 @@ class DSSExtractor:
         self._dss_swagger_url = None
         self._dispatch_on_empty_bundles = dispatch_on_empty_bundles
         self._continue_on_bundle_extract_errors = continue_on_bundle_extract_errors
+        self._http = http_client or HTTPRequest()
+        os.makedirs(f"{self.sd}/errors", exist_ok=True)
 
     # concurrent.futures.ProcessPoolExecutor requires objects to be picklable.
     # hca.dss.DSSClient is unpicklable and is stubbed out here to preserve DSSExtractor's picklability.
@@ -82,12 +84,11 @@ class DSSExtractor:
             logger.error("No bundles found, nothing to do")
             return
         logger.info("Scanning %s bundles", total_bundles)
-        extracted_bundle_count = 0
+        extracted_bundle_count, error_bundle_count = 0, 0
         with dispatch_executor_class(max_workers=max_workers) as executor:
             for page in self.dss_client.post_search.paginate(es_query=query, replica="aws", per_page=500):
-                if extracted_bundle_count % 100 == 0:
-                    msg = f"Extracted bundles: {extracted_bundle_count} ({extracted_bundle_count/total_bundles:.1%})"
-                    logger.info(msg)
+                logger.info(f"Extracted bundles: {extracted_bundle_count} "
+                            f"({extracted_bundle_count/total_bundles:.1%}, {error_bundle_count} errors)")
                 futures = []
                 for bundle in page['results']:
                     bundle_uuid, bundle_version = bundle["bundle_fqid"].split(".", 1)
@@ -98,10 +99,9 @@ class DSSExtractor:
                     try:
                         extract_result = future.result()
                         extracted_bundle_count += 1
-                    except Exception as e:
-                        logger.error("Error while extracting bundle %s:", bundle_uuid)
+                    except Exception:
+                        error_bundle_count += 1
                         if self._continue_on_bundle_extract_errors:
-                            traceback.print_tb(e.__traceback__)
                             continue
                         else:
                             raise
@@ -111,7 +111,9 @@ class DSSExtractor:
         if finalizer is not None:
             finalizer(extractor=self)
         end = time.time()
-        logger.info(f"Processed {extracted_bundle_count} bundles in {round(end - start)} seconds")
+        logger.info(f"Processed {total_bundles} bundles in {round(end - start)} seconds")
+        logger.info(f"Successfully extracted {extracted_bundle_count} bundles")
+        logger.info(f"Failures in {error_bundle_count} bundles (see {self.sd}/errors)")
 
     def get_files_to_fetch_for_bundle(self, bundle_uuid, bundle_version):
         # get the bundle manifest and store in file system
@@ -121,8 +123,14 @@ class DSSExtractor:
             logger.debug("[%s] Loaded cached manifest for bundle %s", threading.current_thread().getName(), bundle_uuid)
         except (FileNotFoundError, json.decoder.JSONDecodeError):
             logger.debug("[%s] Fetching manifest for bundle %s", threading.current_thread().getName(), bundle_uuid)
-            res = http.get(f"{self.dss_client.host}/bundles/{bundle_uuid}", params={"replica": "aws"})
-            res.raise_for_status()
+            res = self._http.get(f"{self.dss_client.host}/bundles/{bundle_uuid}", params={"replica": "aws"})
+            try:
+                res.raise_for_status()
+            except Exception as e:
+                with open(f"{self.sd}/errors/{threading.current_thread().getName()}.log", "a") as fh:
+                    traceback.print_tb(e.__traceback__, file=fh)
+                    print(f"{bundle_uuid}.{bundle_version} {type(e)} {str(e)}", file=fh)
+                raise
             bundle_manifest = res.json()["bundle"]
             while res.links.get("next", {}).get("url"):
                 res = http.get(res.links["next"]["url"], params={"replica": "aws"})
@@ -133,7 +141,7 @@ class DSSExtractor:
                 json.dump(bundle_manifest, fh)
 
         logger.debug("Scanning bundle %s", bundle_uuid)
-        fetched_files = []
+        fetched_files, fetch_file_errors = [], []
         # For each file in the bundle, check if it has been fetched, validate the checksum, and link it in the bundle
         # directory. Otherwise, call _get_file() to fetch it.
         for f in bundle_manifest["files"]:
@@ -147,10 +155,16 @@ class DSSExtractor:
                             self._link_file(bundle_uuid, bundle_version, f)
                             continue
                 except (FileNotFoundError,):
-                    self._get_file(f, bundle_uuid, bundle_version)
-                    fetched_files.append(f)
+                    try:
+                        self._get_file(f, bundle_uuid, bundle_version)
+                        fetched_files.append(f)
+                    except Exception as e:
+                        logger.debug(f"Error while fetching file {f['uuid']}.{f['version']}: %s", e)
+                        fetch_file_errors.append(e)
             else:
                 logger.debug("Skipping file %s/%s (no filter match)", bundle_uuid, f["name"])
+            for e in fetch_file_errors:
+                raise e
         return bundle_uuid, bundle_version, fetched_files
 
     def _should_fetch_file(self, f):
@@ -168,8 +182,15 @@ class DSSExtractor:
 
     def _get_file(self, f, bundle_uuid, bundle_version, print_progress=True):
         logger.debug("[%s] Fetching %s:%s", threading.current_thread().getName(), bundle_uuid, f["name"])
-        res = http.get(f"{self.dss_client.host}/files/{f['uuid']}", params={"replica": "aws", "version": f["version"]})
-        res.raise_for_status()
+        res = self._http.get(f"{self.dss_client.host}/files/{f['uuid']}",
+                             params={"replica": "aws", "version": f["version"]})
+        try:
+            res.raise_for_status()
+        except Exception as e:
+            with open(f"{self.sd}/errors/{threading.current_thread().getName()}.log", "a") as fh:
+                traceback.print_tb(e.__traceback__, file=fh)
+                print(f"{bundle_uuid}.{bundle_version}/{f['uuid']}.{f['version']} {f['name']}", file=fh)
+            raise
         with open(f"{self.sd}/files/{f['uuid']}.{f['version']}", "wb") as fh:
             fh.write(res.content)
         self._link_file(bundle_uuid, bundle_version, f)

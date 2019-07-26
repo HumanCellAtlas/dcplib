@@ -12,8 +12,13 @@ from requests.packages.urllib3.util import retry, timeout
 logger = logging.getLogger(__name__)
 
 class Session(requests.Session):
+    """
+    The purpose of this class is to patch Requests to obey Retry-After headers on redirect (300 series) HTTP responses.
+    See https://github.com/HumanCellAtlas/dcp-cli/pull/341 for more information.
+    """
+    obey_retry_after = True
     def resolve_redirects(self, resp, req, **kwargs):
-        if self.get_redirect_target(resp) and "Retry-After" in resp.headers:
+        if self.obey_retry_after and self.get_redirect_target(resp) and "Retry-After" in resp.headers:
             logger.warning("Waiting %ss before redirect per Retry-After header", resp.headers["Retry-After"])
             resp.connection.max_retries.sleep_for_retry(resp.raw)
         for rv in super(Session, self).resolve_redirects(resp, req, **kwargs):
@@ -33,16 +38,18 @@ class HTTPRequest:
                                backoff_factor=0.1,
                                status_forcelist=frozenset({500, 502, 503, 504}))
     timeout_policy = timeout.Timeout(connect=20, read=40)
-    max_redirects = 1024
     codes = requests.codes
 
-    def __init__(self):
+    def __init__(self, max_redirects=1024, obey_retry_after=True):
         self.sessions = {}
+        self.max_redirects = max_redirects
+        self.obey_retry_after = obey_retry_after
 
     def __call__(self, *args, **kwargs):
         if get_ident() not in self.sessions:
             session = Session()
             session.max_redirects = self.max_redirects
+            session.obey_retry_after = self.obey_retry_after
             adapter = HTTPAdapter(max_retries=self.retry_policy)
             session.mount('http://', adapter)
             session.mount('https://', adapter)

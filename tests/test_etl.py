@@ -1,6 +1,9 @@
+#!/usr/bin/env python
 import tempfile
-import unittest, io, sys, json, logging, concurrent.futures
+import unittest, io, os, sys, json, logging, concurrent.futures, shutil
 from collections import defaultdict
+
+import requests
 from requests.models import Response
 
 logger = logging.getLogger(__name__)
@@ -40,7 +43,21 @@ files = [
 ]
 
 
-class MockDSSClient:
+class MockHTTPClient:
+    status_code = requests.codes.ok
+
+    def get(self, url, params):
+        if "files" in url:
+            payload = {}
+        else:
+            payload = {"bundle": {"files": files}}
+        res = Response()
+        res.status_code = self.status_code
+        res.raw = io.BytesIO(json.dumps(payload).encode())
+        return res
+
+
+class MockDSSClient(MockHTTPClient):
     host = "localhost"
 
     class MockDSSMethod:
@@ -60,23 +77,10 @@ class MockDSSClient:
     def __init__(self, swagger_url="swagger_url"):
         self.swagger_url = swagger_url
 
-    def get(self, url, params):
-        if "files" in url:
-            payload = {}
-        else:
-            payload = {"bundle": {"files": files}}
-        res = Response()
-        res.status_code = 200
-        res.raw = io.BytesIO(json.dumps(payload).encode())
-        return res
-
 
 class TestETL(unittest.TestCase):
 
     def setUp(self):
-        import dcplib.etl
-        dcplib.etl.http = MockDSSClient()
-
         calls["tf"] = 0
         calls["fn"] = 0
         calls["ld"] = 0
@@ -85,12 +89,12 @@ class TestETL(unittest.TestCase):
     def test_etl(self):
         import dcplib.etl
         with tempfile.TemporaryDirectory() as td:
-
             e = dcplib.etl.DSSExtractor(
                 staging_directory=td,
                 content_type_patterns=["application/json"],
                 filename_patterns=["*.json"],
-                dss_client=MockDSSClient()
+                dss_client=MockDSSClient(),
+                http_client=MockHTTPClient()
             )
             e.extract(query={"test": True},
                       max_workers=2,
@@ -106,12 +110,11 @@ class TestETL(unittest.TestCase):
     def test_etl_with_dispatcher(self):
         import dcplib.etl
         with tempfile.TemporaryDirectory() as td:
-
             e = dcplib.etl.DSSExtractor(staging_directory=td,
                                         content_type_patterns=["application/json"],
                                         filename_patterns=["*.json"],
-                                        dss_client=MockDSSClient()
-                                        )
+                                        dss_client=MockDSSClient(),
+                                        http_client=MockHTTPClient())
             e.extract(
                 query={"test": True},
                 max_workers=2,
@@ -126,35 +129,41 @@ class TestETL(unittest.TestCase):
         self.assertEqual(calls["fn"], 1)
 
     @unittest.skipIf(sys.version_info < (3, 6), "Only testing under Python 3.6+")
-    def new_etl_raises_error_correctly(self):
+    def test_etl_raises_errors_correctly(self):
         import dcplib.etl
         with tempfile.TemporaryDirectory() as td:
-
             e = dcplib.etl.DSSExtractor(staging_directory=td,
-                                        content_type_patterns=["application/json"],
-                                        filename_patterns=["*.json"],
-                                        dss_client=MockDSSClient()
-                                        )
+                                        dss_client=MockDSSClient(),
+                                        http_client=MockHTTPClient())
             with self.assertRaises(TestETLException):
                 e.extract(query={"test": True},
                           max_workers=2,
                           max_dispatchers=1,
                           transformer=tf,
                           loader=ld,
-                          finalizer=error_fn
-                          )
+                          finalizer=error_fn)
+
+        with tempfile.TemporaryDirectory() as td2:
+            e = dcplib.etl.DSSExtractor(staging_directory=td2,
+                                        continue_on_bundle_extract_errors=True,
+                                        dss_client=MockDSSClient(),
+                                        http_client=MockHTTPClient())
+            e._http.status_code = 500
+            e.extract(query={"test": True})
+            e._continue_on_bundle_extract_errors = False
+            with self.assertRaises(requests.exceptions.HTTPError):
+                e.extract(query={"test": True})
 
     @unittest.skipIf(sys.version_info < (3, 6), "Only testing under Python 3.6+")
     def test_etl_handles_dispatch_on_empty_bundles_is_true(self):
         import dcplib.etl
         with tempfile.TemporaryDirectory() as td:
-
             e = dcplib.etl.DSSExtractor(staging_directory=td,
                                         content_type_patterns=["application/json"],
                                         filename_patterns=["*.json"],
                                         dss_client=MockDSSClient(),
-                                        dispatch_on_empty_bundles=True
-                                        )
+                                        http_client=MockHTTPClient(),
+                                        dispatch_on_empty_bundles=True)
 
             e.extract(query={"test": True}, max_workers=2, transformer=tf, loader=ld, finalizer=fn)
         self.assertEqual(calls["tf"], 4)
