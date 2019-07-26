@@ -133,7 +133,7 @@ class DSSExtractor:
                 raise
             bundle_manifest = res.json()["bundle"]
             while res.links.get("next", {}).get("url"):
-                res = http.get(res.links["next"]["url"], params={"replica": "aws"})
+                res = self._http.get(res.links["next"]["url"], params={"replica": "aws"})
                 res.raise_for_status()
                 bundle_manifest["files"].extend(res.json()["bundle"]["files"])
             os.makedirs(f"{self.sd}/bundle_manifests", exist_ok=True)
