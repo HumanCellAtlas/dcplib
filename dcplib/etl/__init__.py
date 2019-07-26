@@ -143,7 +143,7 @@ class DSSExtractor:
         logger.debug("Scanning bundle %s", bundle_uuid)
         fetched_files, fetch_file_errors = [], []
         # For each file in the bundle, check if it has been fetched, validate the checksum, and link it in the bundle
-        # directory. Otherwise, call _get_file() to fetch it.
+        # directory. Otherwise, call get_file() to fetch it.
         for f in bundle_manifest["files"]:
             if self._should_fetch_file(f):
                 os.makedirs(f"{self.sd}/bundles/{bundle_uuid}.{bundle_version}", exist_ok=True)
@@ -156,7 +156,7 @@ class DSSExtractor:
                             continue
                 except (FileNotFoundError,):
                     try:
-                        self._get_file(f, bundle_uuid, bundle_version)
+                        self.get_file(f, bundle_uuid, bundle_version)
                         fetched_files.append(f)
                     except Exception as e:
                         logger.debug(f"Error while fetching file {f['uuid']}.{f['version']}: %s", e)
@@ -180,7 +180,7 @@ class DSSExtractor:
             os.symlink(f"../../files/{f['uuid']}.{f['version']}",
                        f"{self.sd}/bundles/{bundle_uuid}.{bundle_version}/{f['name']}")
 
-    def _get_file(self, f, bundle_uuid, bundle_version, print_progress=True):
+    def get_file(self, f, bundle_uuid, bundle_version, print_progress=True):
         logger.debug("[%s] Fetching %s:%s", threading.current_thread().getName(), bundle_uuid, f["name"])
         res = self._http.get(f"{self.dss_client.host}/files/{f['uuid']}",
                              params={"replica": "aws", "version": f["version"]})
