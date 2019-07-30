@@ -1,3 +1,6 @@
+# Changes for v3.0.0 (2019-07-30)
+Drop support for Python 2.7, add 3.7
+
 # Changes for v2.1.2 (2019-07-26)
 
 - dcpquery.etl.DSSExtractor.get_file is public
