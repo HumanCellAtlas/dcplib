@@ -8,9 +8,19 @@ The dcplib package contains modules shared across multiple DCP components.
 ## Installation
 
     pip install dcplib
-   
+
 ## Testing
 
 Run:
 
     make
+
+## Releasing
+
+```bash
+make release_major
+# or
+make release_minor
+# or
+make release_patch
+```
