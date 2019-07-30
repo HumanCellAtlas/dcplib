@@ -8,7 +8,7 @@ class Config:
 
     """
     This Config class stores its configuration in an AwsSecret.
-    Subclass it to create your config, as follows (Python 3.6):
+    Subclass it to create your config, as follows (Python 3.x):
 
       class MyComponentConfig(Config):
 
