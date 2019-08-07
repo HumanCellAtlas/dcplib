@@ -14,7 +14,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from furl import furl
 
 from ..errors import AuthenticationException, AuthorizationException
-from ..fusillade_client import Config
+from ..auth_client import Config
 
 allowed_algorithms = ['RS256']
 gserviceaccount_domain = "iam.gserviceaccount.com"
