@@ -31,4 +31,3 @@ class TestAuthn(unittest.TestCase):
         time.sleep(2)
         with self.subTest('Token expired'):
             self.assertTrue(gcp_creds.is_expired(jwt))
-

@@ -92,5 +92,5 @@ class TestAuthn(unittest.TestCase):
                 self.assertEqual(authn.get_email_claim(param), result)
 
         with self.subTest("missing claim"):
-            with self.assertRaises(errors.AuthenticationException) as ex:
+            with self.assertRaises(errors.AuthenticationException):
                 authn.get_email_claim({})
