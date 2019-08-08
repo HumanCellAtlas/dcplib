@@ -27,13 +27,13 @@ class DCP_Auth_Token:
     def get_header(self, *args):
         return {"Authorization": "Bearer {jwt}".format(jwt=self.get_service_jwt(*args))}
 
-    def get_service_jwt(self, audience: List[str], additional_claims: Dict):
+    def get_service_jwt(self, audience: List[str], additional_claims: Dict = None):
         token = self.token.get((audience, additional_claims))
         if token is None or self.is_expired(token):
             # create a JWT
             iat = time.time()
             exp = iat + self.lifetime
-            payload = additional_claims
+            payload = additional_claims or {}
             payload.update({'iss': self.credentials["client_email"],
                             'sub': self.credentials["client_email"],
                             'aud': audience,
