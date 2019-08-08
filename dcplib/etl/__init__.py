@@ -73,9 +73,9 @@ class DSSExtractor:
 
             return tb
 
-    def extract(self, query=None, max_workers=512, max_dispatchers=1,
+    def extract(self, query=None, max_workers=512, max_dispatchers=1, page_size=500,
                 dispatch_executor_class: concurrent.futures.Executor = concurrent.futures.ThreadPoolExecutor,
-                transformer: callable = None, loader: callable = None, finalizer: callable = None, page_size: int = 500,
+                transformer: callable = None, loader: callable = None, finalizer: callable = None,
                 page_processor: callable = None):
         start = time.time()
         if query is None:
@@ -91,6 +91,7 @@ class DSSExtractor:
                 logger.info(f"Extracted bundles: {extracted_bundle_count} "
                             f"({extracted_bundle_count/total_bundles:.1%}, {error_bundle_count} errors)")
                 futures = []
+                extracted_results = []
                 for bundle in page['results']:
                     bundle_uuid, bundle_version = bundle["bundle_fqid"].split(".", 1)
                     f = executor.submit(self.extract_transform_one, bundle_uuid, bundle_version, transformer)
@@ -98,7 +99,7 @@ class DSSExtractor:
 
                 for future in concurrent.futures.as_completed(futures):
                     try:
-                        extract_result = future.result()
+                        extracted_results.append(future.result())
                         extracted_bundle_count += 1
                     except Exception:
                         error_bundle_count += 1
@@ -106,10 +107,10 @@ class DSSExtractor:
                             continue
                         else:
                             raise
-                    if loader is not None and extract_result is not None:
-                        loader(bundle=extract_result)
+                    if loader is not None and extracted_results[-1] is not None:
+                        loader(bundle=extracted_results[-1])
                 if page_processor is not None:
-                    page_processor()
+                    page_processor(extracted_results)
 
         if finalizer is not None:
             finalizer(extractor=self)

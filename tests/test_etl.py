@@ -28,8 +28,8 @@ def fn(*args, **kwargs):
     calls["fn"] += 1
 
 
-def pp():
-    logger.debug("Per Page callable called")
+def pp(*args, **kwargs):
+    logger.debug("Per Page callable with %s %s", args, kwargs)
     calls['pp'] += 1
 
 
@@ -89,6 +89,7 @@ class TestETL(unittest.TestCase):
         calls["tf"] = 0
         calls["fn"] = 0
         calls["ld"] = 0
+        calls["pp"] = 0
 
     @unittest.skipIf(sys.version_info < (3, 6), "Only testing under Python 3.6+")
     def test_etl(self):
