@@ -4,9 +4,7 @@ from typing import List, Dict
 import jwt
 import time
 
-from ..aws import clients
-
-sm = clients.secretsmanager
+from ..aws_secret import AwsSecret
 
 
 class DCPServiceAccount:
@@ -19,15 +17,16 @@ class DCPServiceAccount:
         'verify_aud': False,
         'verify_iss': False
     }
-
     # options used to check expiration of token.
 
     @classmethod
-    def from_secrets_manager(cls, deployment, service, name, **kwargs):
-        secret_id = '/'.join(['/dcp', deployment, service, name])
-        response = sm.get_secret_value(SecretId=secret_id)
-        credentials = json.loads(response['SecretString'])
-        return cls.__init__(credentials, **kwargs)
+    def from_secrets_manager(cls, secret_id, audience, **kwargs):
+        credentials = json.loads(AwsSecret(secret_id).value)
+        return cls(credentials, audience, **kwargs)
+
+    @staticmethod
+    def format_secret_id(secret_name, deployment='', service=''):
+        return '/'.join([i for i in ['dcp', service, deployment, secret_name] if i])
 
     def __init__(self,
                  google_service_account_credentials: dict,
@@ -93,7 +92,7 @@ class DCPServiceAccount:
         except jwt.ExpiredSignatureError:  # type: ignore
             return True
         else:
-            if decoded_token['exp'] - time.time() <= self.renew_buffer:
+            if decoded_token['exp'] - time.time() >= self.renew_buffer:
                 # If the token will expire in less than cls._renew_buffer amount of time in seconds, the token is
                 # considered expired.
                 return True
