@@ -1,3 +1,9 @@
+# Changes for v3.1.0 (2019-08-08)
+
+- ETL: add page_processor and page_size args to extract function (#46)
+
+- Drop support for Python 3.4
+
 # Changes for v3.0.0 (2019-07-30)
 Drop support for Python 2.7, add 3.7
 
