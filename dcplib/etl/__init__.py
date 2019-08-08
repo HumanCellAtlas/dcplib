@@ -75,7 +75,8 @@ class DSSExtractor:
 
     def extract(self, query=None, max_workers=512, max_dispatchers=1,
                 dispatch_executor_class: concurrent.futures.Executor = concurrent.futures.ThreadPoolExecutor,
-                transformer: callable = None, loader: callable = None, finalizer: callable = None):
+                transformer: callable = None, loader: callable = None, finalizer: callable = None, page_size: int = 500,
+                page_processor: callable = None):
         start = time.time()
         if query is None:
             query = self.default_bundle_query
@@ -86,7 +87,7 @@ class DSSExtractor:
         logger.info("Scanning %s bundles", total_bundles)
         extracted_bundle_count, error_bundle_count = 0, 0
         with dispatch_executor_class(max_workers=max_workers) as executor:
-            for page in self.dss_client.post_search.paginate(es_query=query, replica="aws", per_page=500):
+            for page in self.dss_client.post_search.paginate(es_query=query, replica="aws", per_page=page_size):
                 logger.info(f"Extracted bundles: {extracted_bundle_count} "
                             f"({extracted_bundle_count/total_bundles:.1%}, {error_bundle_count} errors)")
                 futures = []
@@ -107,6 +108,8 @@ class DSSExtractor:
                             raise
                     if loader is not None and extract_result is not None:
                         loader(bundle=extract_result)
+                if page_processor is not None:
+                    page_processor()
 
         if finalizer is not None:
             finalizer(extractor=self)
