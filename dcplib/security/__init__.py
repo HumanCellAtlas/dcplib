@@ -7,8 +7,9 @@ This libray provides tools to generate and verify JWTs.
 import os
 from typing import List, Dict, Any
 
-from ..errors import AuthorizationException
 from .dcp_auth_token import DCP_Auth_Token
+from ..errors import AuthorizationException
+
 
 class Config:
     _openid_provider: str = None
