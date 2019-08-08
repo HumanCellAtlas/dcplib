@@ -5,8 +5,10 @@ This libray provides tools to generate and verify JWTs.
 """
 
 import os
-from typing import List
+from typing import List, Dict, Any
 
+from ..errors import AuthorizationException
+from .dcp_auth_token import DCP_Auth_Token
 
 class Config:
     _openid_provider: str = None
@@ -27,13 +29,13 @@ class Config:
         Config._trusted_google_projects = [x for x in trusted_google_projects if x.endswith("iam.gserviceaccount.com")]
 
     @staticmethod
-    def get_openid_provider():
+    def get_openid_provider() -> str:
         if not Config.openid_provider:
             Config.openid_provider = os.environ['DCP_OPENID_PROVIDER']
         return Config.openid_provider
 
     @staticmethod
-    def get_auth_url():
+    def get_auth_url() -> str:
         if not Config._auth_url:
             Config._auth_url = os.environ['DCP_AUTH_URL']
         return Config._auth_url
@@ -45,7 +47,15 @@ class Config:
                                                if x.endswith("iam.gserviceaccount.com")]
         return Config._TRUSTED_GOOGLE_PROJECTS
 
+    @staticmethod
+    def get_email_claim(token_info: Dict[str, Any]) -> str:
+        email = token_info.get(OIDC_Claims._email) or token_info.get('email')
+        if email:
+            return email
+        else:
+            raise AuthorizationException(f"email claim is missing from token.")
+
 
 class OIDC_Claims:
-    email = 'https://auth.data.humancellatlas.org/email'
-    group = 'https://auth.data.humancellatlas.org/group'
+    _email: str = 'https://auth.data.humancellatlas.org/email'
+    _group: str = 'https://auth.data.humancellatlas.org/group'
