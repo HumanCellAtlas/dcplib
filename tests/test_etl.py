@@ -28,6 +28,11 @@ def fn(*args, **kwargs):
     calls["fn"] += 1
 
 
+def pp(*args, **kwargs):
+    logger.debug("Per Page callable with %s %s", args, kwargs)
+    calls['pp'] += 1
+
+
 class TestETLException(Exception):
     pass
 
@@ -70,7 +75,7 @@ class MockDSSClient(MockHTTPClient):
 
         def paginate(self, es_query, replica, per_page):
             for i in range(4):
-                yield {"results": [{"bundle_fqid": "a%d.b" % i}]}
+                yield {"results": [{"bundle_fqid": "a{0}.{1}.b".format(i, j)} for j in range(per_page)]}
 
     post_search = MockDSSMethod()
 
@@ -84,6 +89,7 @@ class TestETL(unittest.TestCase):
         calls["tf"] = 0
         calls["fn"] = 0
         calls["ld"] = 0
+        calls["pp"] = 0
 
     @unittest.skipIf(sys.version_info < (3, 6), "Only testing under Python 3.6+")
     def test_etl(self):
@@ -101,7 +107,8 @@ class TestETL(unittest.TestCase):
                       max_dispatchers=1,
                       transformer=tf,
                       loader=ld,
-                      finalizer=fn)
+                      finalizer=fn,
+                      page_size=1)
         self.assertEqual(calls["tf"], 4)
         self.assertEqual(calls["ld"], 4)
         self.assertEqual(calls["fn"], 1)
@@ -122,7 +129,8 @@ class TestETL(unittest.TestCase):
                 dispatch_executor_class=concurrent.futures.ProcessPoolExecutor,
                 transformer=tf,
                 loader=ld,
-                finalizer=fn
+                finalizer=fn,
+                page_size=1
             )
         self.assertEqual(calls["tf"], 0)
         self.assertEqual(calls["ld"], 4)
@@ -141,7 +149,8 @@ class TestETL(unittest.TestCase):
                           max_dispatchers=1,
                           transformer=tf,
                           loader=ld,
-                          finalizer=error_fn)
+                          finalizer=error_fn,
+                          page_size=1)
 
         with tempfile.TemporaryDirectory() as td2:
             e = dcplib.etl.DSSExtractor(staging_directory=td2,
@@ -149,10 +158,10 @@ class TestETL(unittest.TestCase):
                                         dss_client=MockDSSClient(),
                                         http_client=MockHTTPClient())
             e._http.status_code = 500
-            e.extract(query={"test": True})
+            e.extract(query={"test": True}, page_size=1)
             e._continue_on_bundle_extract_errors = False
             with self.assertRaises(requests.exceptions.HTTPError):
-                e.extract(query={"test": True})
+                e.extract(query={"test": True}, page_size=1)
 
     @unittest.skipIf(sys.version_info < (3, 6), "Only testing under Python 3.6+")
     def test_etl_handles_dispatch_on_empty_bundles_is_true(self):
@@ -165,10 +174,28 @@ class TestETL(unittest.TestCase):
                                         http_client=MockHTTPClient(),
                                         dispatch_on_empty_bundles=True)
 
-            e.extract(query={"test": True}, max_workers=2, transformer=tf, loader=ld, finalizer=fn)
+            e.extract(query={"test": True}, max_workers=2, transformer=tf, loader=ld, finalizer=fn, page_size=1)
         self.assertEqual(calls["tf"], 4)
         self.assertEqual(calls["ld"], 4)
         self.assertEqual(calls["fn"], 1)
+
+    @unittest.skipIf(sys.version_info < (3, 6), "Only testing under Python 3.6+")
+    def test_per_page_callable_called_once_per_page(self):
+        import dcplib.etl
+        with tempfile.TemporaryDirectory() as td:
+            e = dcplib.etl.DSSExtractor(staging_directory=td,
+                                        content_type_patterns=["application/json"],
+                                        filename_patterns=["*.json"],
+                                        dss_client=MockDSSClient(),
+                                        http_client=MockHTTPClient(),
+                                        dispatch_on_empty_bundles=True)
+
+            e.extract(query={"test": True}, max_workers=2, transformer=tf, loader=ld, finalizer=fn, page_processor=pp,
+                      page_size=5)
+        self.assertEqual(calls["tf"], 20)
+        self.assertEqual(calls["ld"], 20)
+        self.assertEqual(calls["fn"], 1)
+        self.assertEqual(calls["pp"], 4)
 
 
 if __name__ == '__main__':
