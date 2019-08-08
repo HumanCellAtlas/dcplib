@@ -13,7 +13,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from furl import furl
 
 from ..errors import AuthenticationException
-from ..security import Config
+from ..security import Config, OIDC_Claims
 
 allowed_algorithms = ['RS256']
 gserviceaccount_domain = "iam.gserviceaccount.com"
@@ -33,14 +33,14 @@ def get_openid_config(openid_provider):
         openid_provider = 'accounts.google.com'
     elif openid_provider.startswith("https://"):
         openid_provider = furl(openid_provider).host
-    res = requests.get("https://{op}/.well-known/openid-configuration".format(op=openid_provider))
+    res = requests.get(f"https://{openid_provider}/.well-known/openid-configuration")
     res.raise_for_status()
     return res.json()
 
 
 def get_jwks_uri(openid_provider):
     if openid_provider.endswith(gserviceaccount_domain):
-        return "https://www.googleapis.com/service_accounts/v1/jwk/{op}".format(op=openid_provider)
+        return f"https://www.googleapis.com/service_accounts/v1/jwk/{openid_provider}"
     else:
         return get_openid_config(openid_provider)["jwks_uri"]
 
@@ -62,11 +62,9 @@ def get_public_keys(openid_provider):
     }
 
 
-def decode(token: str, audience: typing.List[str]) -> typing.Optional[typing.Mapping]:
+def decode_jwt(token: str, audience: typing.List[str]) -> typing.Optional[typing.Mapping]:
     """
-    Verify the JWT from the request. This is function is referenced in
-    securitySchemes.BearerAuth.x-bearerInfoFunc. It's used by connexion to authorize api endpoints that use BearAuth
-    securitySchema.
+    Verify and decode the JWT from the request.
 
     :param token: the Authorization header in the request.
     :param audience:
@@ -105,4 +103,12 @@ def assert_authorized_issuer(token: typing.Mapping[str, typing.Any]) -> None:
     service_name, _, service_domain = issuer.partition("@")
     if service_domain in Config.get_trusted_google_projects() and issuer == token['sub']:
         return
-    raise AuthenticationException("Token issuer not authorized: {iss}".format(iss=issuer))
+    raise AuthenticationException(f"Token issuer not authorized: {issuer}")
+
+
+def get_email_claim(token_info: typing.Dict[str, typing.Any]) -> str:
+    email = token_info.get(OIDC_Claims['email']) or token_info.get('email')
+    if email:
+        return email
+    else:
+        raise AuthenticationException("Email claim is missing from token.")

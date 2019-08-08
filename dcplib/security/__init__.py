@@ -4,11 +4,12 @@ This library contains utilities to use secure features of the DCP.
 This libray provides tools to generate and verify JWTs.
 """
 
-import os
-from typing import List, Dict, Any
+from typing import List
 
-from .dcp_auth_token import DCP_Auth_Token
-from ..errors import AuthorizationException
+from .dcp_service_account import DCPServiceAccount
+from ..errors import SecurityException
+
+security_config_not_set_error = "security configuration not set for {}. Use Config.set_config() to set."
 
 
 class Config:
@@ -31,32 +32,24 @@ class Config:
 
     @staticmethod
     def get_openid_provider() -> str:
-        if not Config.openid_provider:
-            Config.openid_provider = os.environ['DCP_OPENID_PROVIDER']
-        return Config.openid_provider
+        if not Config._openid_provider:
+            raise SecurityException(security_config_not_set_error.format('openid_provider'))
+        return Config._openid_provider
 
     @staticmethod
     def get_auth_url() -> str:
         if not Config._auth_url:
-            Config._auth_url = os.environ['DCP_AUTH_URL']
+            raise SecurityException(security_config_not_set_error.format('auth_url'))
         return Config._auth_url
 
     @staticmethod
     def get_trusted_google_projects():
-        if Config._TRUSTED_GOOGLE_PROJECTS is None:
-            Config._TRUSTED_GOOGLE_PROJECTS = [x for x in os.environ['DCP_AUTHORIZED_DOMAINS'].split()
-                                               if x.endswith("iam.gserviceaccount.com")]
-        return Config._TRUSTED_GOOGLE_PROJECTS
-
-    @staticmethod
-    def get_email_claim(token_info: Dict[str, Any]) -> str:
-        email = token_info.get(OIDC_Claims._email) or token_info.get('email')
-        if email:
-            return email
-        else:
-            raise AuthorizationException(f"email claim is missing from token.")
+        if Config._trusted_google_projects is None:
+            raise SecurityException(security_config_not_set_error.format('trusted_google_projects'))
+        return Config._trusted_google_projects
 
 
-class OIDC_Claims:
-    _email: str = 'https://auth.data.humancellatlas.org/email'
-    _group: str = 'https://auth.data.humancellatlas.org/group'
+OIDC_Claims = {
+    'email': 'https://auth.data.humancellatlas.org/email',
+    'group': 'https://auth.data.humancellatlas.org/group'
+}

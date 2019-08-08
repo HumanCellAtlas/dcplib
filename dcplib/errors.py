@@ -4,6 +4,11 @@ class DCPLIBException(BaseException):
     """
 
 
+class SecurityException(DCPLIBException):
+    """
+    A security exception occurred
+    """
+
 class AuthorizationException(DCPLIBException):
     """
     Authorization error occurred
