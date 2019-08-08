@@ -75,7 +75,7 @@ class MockDSSClient(MockHTTPClient):
 
         def paginate(self, es_query, replica, per_page):
             for i in range(4):
-                yield {"results": [{"bundle_fqid": f"a{i}.{j}.b"} for j in range(per_page)]}
+                yield {"results": [{"bundle_fqid": "a{0}.{1}.b".format(i, j)} for j in range(per_page)]}
 
     post_search = MockDSSMethod()
 
