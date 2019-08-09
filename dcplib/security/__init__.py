@@ -1,7 +1,5 @@
 """
 This library contains utilities to use secure features of the DCP.
-
-This libray provides tools to generate and verify JWTs.
 """
 
 from typing import List

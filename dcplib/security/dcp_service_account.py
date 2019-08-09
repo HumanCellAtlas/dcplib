@@ -1,13 +1,16 @@
 import json
+import time
 from typing import List, Dict
 
 import jwt
-import time
 
 from ..aws_secret import AwsSecret
 
 
 class DCPServiceAccount:
+    """
+    Manage DCP service account for making authenticated request.
+    """
     _default_renew_buffer = 30
     # If the token will expire in less than this amount of time in seconds, generate a new token.
     _default_lifetime = 3600
@@ -17,6 +20,7 @@ class DCPServiceAccount:
         'verify_aud': False,
         'verify_iss': False
     }
+
     # options used to check expiration of token.
 
     @classmethod

@@ -1,5 +1,5 @@
 """
-Generate and verify JWTS
+This module provide utilities to verify JWTs
 """
 
 import base64
