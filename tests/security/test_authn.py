@@ -4,18 +4,18 @@ from unittest import mock
 
 from dcplib import errors
 from dcplib import security
-from dcplib.security import authn, DCPServiceAccount
+from dcplib.security import authn, DCPServiceAccountManager
 
 
 class TestAuthn(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        security.Config.set_config('https://openid_provider.test',
+        security.Config.setup('https://openid_provider.test',
                                    'https://auth_url.test',
-                                   ['travis-test@test.iam.gserviceaccount.com'])
-        cls.gcp_creds = DCPServiceAccount.from_secrets_manager(
-            DCPServiceAccount.format_secret_id(
+                              ['travis-test@test.iam.gserviceaccount.com'])
+        cls.gcp_creds = DCPServiceAccountManager.from_secrets_manager(
+            DCPServiceAccountManager.format_secret_id(
                 'gcp_credentials.json',
                 deployment='test',
                 service='dcplib'

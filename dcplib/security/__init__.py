@@ -1,31 +1,32 @@
 """
 This library contains utilities to use secure features of the DCP.
+
 """
 
 from typing import List
 
-from .dcp_service_account import DCPServiceAccount
+from .dcp_service_account import DCPServiceAccountManager
 from ..errors import SecurityException
 
-security_config_not_set_error = "security configuration not set for {}. Use Config.set_config() to set."
+security_config_not_set_error = "security configuration not set for {}. Use Config.setup() to set."
 
 
 class Config:
-    _openid_provider = None
-    _auth_url = None
+    _openid_provider = "humancellatlas.auth0.com"
+    _auth_provider = "https://auth.data.humancellatlas.org"
     _trusted_google_projects = None
 
     @staticmethod
-    def set_config(openid_provider: str = None, auth_url: str = None, trusted_google_projects: List[str] = None):
+    def setup(openid_provider: str = None, auth_url: str = None, trusted_google_projects: List[str] = None):
         """
         Set the configuration values
         :param openid_provider:
-        :param auth_url:
+        :param auth_url: The url for the DCP authentication and authorization provider.
         :param trusted_google_projects:
         :return:
         """
-        Config._openid_provider = openid_provider
-        Config._auth_url = auth_url
+        Config._openid_provider = openid_provider or Config._openid_provider
+        Config._auth_url = auth_url or Config._auth_provider
         Config._trusted_google_projects = [x for x in trusted_google_projects if x.endswith("iam.gserviceaccount.com")]
 
     @staticmethod

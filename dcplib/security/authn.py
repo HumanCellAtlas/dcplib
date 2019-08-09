@@ -23,7 +23,7 @@ session = requests.Session()
 
 
 @functools.lru_cache(maxsize=32)
-def get_openid_config(openid_provider):
+def get_openid_config(openid_provider: str):
     """
 
     :param openid_provider: the openid provider's domain.
@@ -46,7 +46,7 @@ def get_jwks_uri(openid_provider):
 
 
 @functools.lru_cache(maxsize=32)
-def get_public_keys(openid_provider):
+def get_public_keys(openid_provider: str):
     """
     Fetches the public key from an OIDC Identity provider to verify the JWT.
     :param openid_provider: the openid provider's domain.
@@ -67,7 +67,7 @@ def decode_jwt(token: str, audience: typing.List[str]) -> typing.Optional[typing
     Verify and decode the JWT from the request.
 
     :param token: the Authorization header in the request.
-    :param audience:
+    :param audience: the expected audience for the JWT
     :return: Decoded and verified token.
     """
     try:

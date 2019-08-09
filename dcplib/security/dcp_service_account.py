@@ -7,24 +7,29 @@ import jwt
 from ..aws_secret import AwsSecret
 
 
-class DCPServiceAccount:
+class DCPServiceAccountManager:
     """
-    Manage DCP service account for making authenticated request.
+    Manage the minting of JWT for making authenticated request from DCP service account.
     """
     _default_renew_buffer = 30
-    # If the token will expire in less than this amount of time in seconds, generate a new token.
     _default_lifetime = 3600
-    # How long the token should live.
     _options = {
         'verify_signature': False,
         'verify_aud': False,
         'verify_iss': False
     }
-
     # options used to check expiration of token.
 
     @classmethod
     def from_secrets_manager(cls, secret_id, audience, **kwargs):
+        """
+        Retrieve the secretId stored in AWS secrets manager and create a DCPServiceAccountManager.
+
+        :param secret_id: The secretId store in AWS secrets manager
+        :param audience: The audience to use in the JWT
+        :param kwargs: arguments passed to the DCPServiceAccountManager.__init__ method
+        :return:
+        """
         credentials = json.loads(AwsSecret(secret_id).value)
         return cls(credentials, audience, **kwargs)
 
@@ -41,8 +46,10 @@ class DCPServiceAccount:
         """
 
         :param google_service_account_credentials: a json dict containing google service account credentials.
-        :param renew_buffer:
-        :param lifetime:
+        :param audience: the audience used for the managed JWT.
+        :param additional_claims: additional claims added to the managed JWT.
+        :param renew_buffer: (seconds) If the JWT will expire in less than this amount of time, generate a new JWT.
+        :param lifetime: (seconds) how long the token should live.
         """
 
         self.credentials = google_service_account_credentials
@@ -53,7 +60,22 @@ class DCPServiceAccount:
         self.token = None
 
     def get_header(self):
+        """
+        Generate a new JWT if the old JWT has expired and returns an authorization header for making authenticated
+        requests to DCP components.
+        
+        :return: authorization header
+        """
         return {"Authorization": "Bearer {}".format(self.get_jwt())}
+
+    def create_header(self, **kwargs):
+        """
+        Generates a new JWT and returns it in an authorization header for making authenticated requests to DCP
+        components.
+        :param kwargs: arguments passed through to create_jwt
+        :return: authorization header
+        """
+        return {"Authorization": "Bearer {}".format(self.create_jwt(**kwargs))}
 
     def get_jwt(self):
         """
@@ -63,13 +85,13 @@ class DCPServiceAccount:
             self.token = self.create_jwt(self.audience, self.additional_claims)
         return self.token
 
-    def create_jwt(self, audience, additional_claims=None):
+    def create_jwt(self, audience: List[str], additional_claims=None):
         """
         Creates a JWT using the provided audience and additional_claims
 
         :param audience:
         :param additional_claims:
-        :return:
+        :return: str
         """
         iat = time.time()
         exp = iat + self.lifetime
@@ -90,7 +112,13 @@ class DCPServiceAccount:
             algorithm='RS256').decode()
         return token
 
-    def is_expired(self, token):
+    def is_expired(self, token: str):
+        """
+        Check if the provided token has expired.
+
+        :param token:
+        :return: bool
+        """
         try:
             decoded_token = jwt.decode(token, options=self._options)
         except jwt.ExpiredSignatureError:  # type: ignore
