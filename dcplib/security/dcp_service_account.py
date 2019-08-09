@@ -64,7 +64,7 @@ class DCPServiceAccountManager:
         """
         Generate a new JWT if the old JWT has expired and returns an authorization header for making authenticated
         requests to DCP components.
-        
+
         :return: authorization header
         """
         return {"Authorization": "Bearer {}".format(self.get_jwt())}
