@@ -18,6 +18,7 @@ class DCPServiceAccountManager:
         'verify_aud': False,
         'verify_iss': False
     }
+
     # options used to check expiration of token.
 
     @classmethod

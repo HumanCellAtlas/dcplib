@@ -10,7 +10,7 @@ class TestAuthn(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         security.Config.setup('https://openid_provider.test',
-                                   'https://auth_url.test',
+                              'https://auth_url.test',
                               ['travis-test@test.iam.gserviceaccount.com'])
 
     def test_expired(self):

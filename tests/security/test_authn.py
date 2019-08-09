@@ -12,7 +12,7 @@ class TestAuthn(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         security.Config.setup('https://openid_provider.test',
-                                   'https://auth_url.test',
+                              'https://auth_url.test',
                               ['travis-test@test.iam.gserviceaccount.com'])
         cls.gcp_creds = DCPServiceAccountManager.from_secrets_manager(
             DCPServiceAccountManager.format_secret_id(
