@@ -13,9 +13,9 @@ security_config_not_set_error = "security configuration not set for {}. Use Conf
 
 
 class Config:
-    _openid_provider: str = None
-    _auth_url: str = None
-    _trusted_google_projects: List[str] = None
+    _openid_provider = None
+    _auth_url = None
+    _trusted_google_projects = None
 
     @staticmethod
     def set_config(openid_provider: str = None, auth_url: str = None, trusted_google_projects: List[str] = None):
