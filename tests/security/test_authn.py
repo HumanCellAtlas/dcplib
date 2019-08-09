@@ -83,12 +83,12 @@ class TestAuthn(unittest.TestCase):
         ]
 
         for param, result in tests:
-            with self.subTest(f"no custom claim {param}"):
+            with self.subTest("no custom claim " + str(param)):
                 self.assertEqual(authn.get_email_claim(param), result)
 
         os.environ['OIDC_EMAIL_CLAIM'] = 'TEST_CLAIM'
         for param, result in tests:
-            with self.subTest(f"custom claim {param}"):
+            with self.subTest("custom claim " + str(param)):
                 self.assertEqual(authn.get_email_claim(param), result)
 
         with self.subTest("missing claim"):

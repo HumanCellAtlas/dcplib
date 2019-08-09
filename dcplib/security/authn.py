@@ -33,14 +33,14 @@ def get_openid_config(openid_provider):
         openid_provider = 'accounts.google.com'
     elif openid_provider.startswith("https://"):
         openid_provider = furl(openid_provider).host
-    res = requests.get(f"https://{openid_provider}/.well-known/openid-configuration")
+    res = requests.get("https://{op}/.well-known/openid-configuration".format(op=openid_provider))
     res.raise_for_status()
     return res.json()
 
 
 def get_jwks_uri(openid_provider):
     if openid_provider.endswith(gserviceaccount_domain):
-        return f"https://www.googleapis.com/service_accounts/v1/jwk/{openid_provider}"
+        return "https://www.googleapis.com/service_accounts/v1/jwk/{op}".format(op=openid_provider)
     else:
         return get_openid_config(openid_provider)["jwks_uri"]
 
@@ -103,7 +103,7 @@ def assert_authorized_issuer(token: typing.Mapping[str, typing.Any]) -> None:
     service_name, _, service_domain = issuer.partition("@")
     if service_domain in Config.get_trusted_google_projects() and issuer == token['sub']:
         return
-    raise AuthenticationException(f"Token issuer not authorized: {issuer}")
+    raise AuthenticationException("Token issuer not authorized: {iss}".format(iss=issuer))
 
 
 def get_email_claim(token_info: typing.Dict[str, typing.Any]) -> str:

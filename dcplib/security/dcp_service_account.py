@@ -41,15 +41,15 @@ class DCPServiceAccount:
         :param lifetime:
         """
 
-        self.credentials: dict = google_service_account_credentials
+        self.credentials = google_service_account_credentials
         self.audience = audience
         self.additional_claims = additional_claims
-        self.renew_buffer: int = renew_buffer or self._default_renew_buffer
-        self.lifetime: int = lifetime or self._default_lifetime
+        self.renew_buffer = renew_buffer or self._default_renew_buffer
+        self.lifetime = lifetime or self._default_lifetime
         self.token = None
 
     def get_header(self):
-        return {"Authorization": f"Bearer {self.get_jwt()}"}
+        return {"Authorization": "Bearer {}".format(self.get_jwt())}
 
     def get_jwt(self):
         """
