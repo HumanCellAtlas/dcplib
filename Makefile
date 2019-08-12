@@ -4,7 +4,7 @@ MODULES=dcplib tests
 test: lint tests
 
 lint:
-	if [[ "$$(python --version)" < "Python 3.6" ]]; then FLAKE8_OPTS="--exclude dcplib/etl,dcplib/test_helpers"; fi; \
+	if [[ "$$(python --version)" < "Python 3.6" ]]; then FLAKE8_OPTS="--exclude dcplib/etl,dcplib/test_helpers,dcplib/component_agents,dcplib/component_entities"; fi; \
 	flake8 $(MODULES) *.py $$FLAKE8_OPTS
 
 tests:

@@ -3,3 +3,4 @@ boto3 >= 1.7.13
 crc32c
 puremagic==1.4
 requests >= 2.18.4, < 3
+termcolor >= 1.1.0, < 2
