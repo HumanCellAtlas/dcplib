@@ -1,3 +1,8 @@
+# Changes for v3.2.0 (2019-08-14)
+Added IngestApiAgent and ingest_entities (SubmissionEnvelope etc...)
+which are used by data-monitoring-dashboard, dcp-diag and soon the dcp
+integration tests.
+
 # Changes for v3.1.0 (2019-08-08)
 
 - ETL: add page_processor and page_size args to extract function (#46)
