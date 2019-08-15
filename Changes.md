@@ -1,3 +1,7 @@
+# Changes for v3.2.1 (2019-08-15)
+metadata project_shortname has been replaced by project_short_name,
+make ingest_entities.Project work with both.
+
 # Changes for v3.2.0 (2019-08-14)
 Added IngestApiAgent and ingest_entities (SubmissionEnvelope etc...)
 which are used by data-monitoring-dashboard, dcp-diag and soon the dcp
