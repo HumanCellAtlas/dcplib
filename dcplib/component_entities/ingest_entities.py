@@ -39,7 +39,8 @@ class Project(EntityBase):
 
     @property
     def short_name(self):
-        return self.data['content']['project_core']['project_short_name']
+        project_core = self.data['content']['project_core']
+        return project_core.get('project_short_name') or project_core.get('project_shortname')
 
     @property
     def title(self):
