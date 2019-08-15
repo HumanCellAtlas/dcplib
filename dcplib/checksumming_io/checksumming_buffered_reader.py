@@ -35,4 +35,4 @@ class ChecksummingBufferedReader:
         return self
 
     def __exit__(self, *args, **kwargs):
-        pass
+        self._reader.close()
