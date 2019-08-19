@@ -69,8 +69,8 @@ class DCPServiceAccountManager:
 
     def get_authorization_header(self):
         """
-        Generate anGenerate a new JWT if none  the old JWT has expired and returns
-        Generate an authorization header.
+        Generate an authorization header using the audience and additional claims specified during the objects
+        initialization.
 
         :return: an authorization header for making authenticated requests to DCP components.
         """
@@ -78,7 +78,7 @@ class DCPServiceAccountManager:
 
     def create_authorization_header(self, **kwargs):
         """
-        Generates a new JWT and returns it in an authorization header.
+        Generates a new JWT with the kwargs provided and returns it in an authorization header.
         :param kwargs: arguments passed through to create_jwt
         :return: an authorization header for making authenticated requests to DCP components.
         """
