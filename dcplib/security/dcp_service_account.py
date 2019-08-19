@@ -5,7 +5,6 @@ from typing import List, Dict
 import jwt
 
 from ..aws_secret import AwsSecret
-from ..security import allowed_algorithms
 
 
 class DCPServiceAccountManager:
@@ -125,7 +124,7 @@ class DCPServiceAccountManager:
             payload,
             self.credentials["private_key"],
             headers=additional_headers,
-            algorithm=allowed_algorithms[0]).decode()
+            algorithm='RS256').decode()
         return token
 
     def is_expired(self, token: str) -> bool:
