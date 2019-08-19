@@ -1,5 +1,7 @@
 """
-This module provide utilities to verify JWTs
+This module provide utilities to verify and decode JWTs
+
+must setup dcplib.security.Config before using.
 """
 
 import base64
