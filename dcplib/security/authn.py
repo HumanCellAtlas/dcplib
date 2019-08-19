@@ -13,9 +13,8 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from furl import furl
 
 from ..errors import AuthenticationException
-from ..security import Config, OIDC_Claims
+from ..security import Config, OIDC_claims, allowed_algorithms
 
-allowed_algorithms = ['RS256']
 gserviceaccount_domain = "iam.gserviceaccount.com"
 
 # recycling the same session for all requests.
@@ -33,7 +32,7 @@ def get_openid_config(openid_provider: str):
         openid_provider = 'accounts.google.com'
     elif openid_provider.startswith("https://"):
         openid_provider = furl(openid_provider).host
-    res = requests.get("https://{op}/.well-known/openid-configuration".format(op=openid_provider))
+    res = session.get("https://{op}/.well-known/openid-configuration".format(op=openid_provider))
     res.raise_for_status()
     return res.json()
 
@@ -68,7 +67,7 @@ def decode_jwt(token: str, audience: typing.List[str]) -> typing.Optional[typing
 
     :param token: the Authorization header in the request.
     :param audience: the expected audience for the JWT
-    :return: Decoded and verified token.
+    :return: Decoded and verified token info.
     """
     try:
         unverified_token = jwt.decode(token, verify=False)
@@ -81,7 +80,7 @@ def decode_jwt(token: str, audience: typing.List[str]) -> typing.Optional[typing
 
     try:
         token_header = jwt.get_unverified_header(token)
-        verified_tok = jwt.decode(token,
+        verified_token_info = jwt.decode(token,
                                   key=public_keys[token_header["kid"]],
                                   issuer=issuer,
                                   audience=audience,
@@ -89,25 +88,29 @@ def decode_jwt(token: str, audience: typing.List[str]) -> typing.Optional[typing
                                   )
     except jwt.PyJWTError as ex:  # type: ignore
         raise AuthenticationException('Authorization token is invalid') from ex
-    return verified_tok
+    return verified_token_info
 
 
-def assert_authorized_issuer(token: typing.Mapping[str, typing.Any]) -> None:
+def assert_authorized_issuer(token_info: typing.Mapping[str, typing.Any]) -> None:
     """
-    Must be either `Config.get_openid_provider()` or in `Config.get_trusted_google_projects()`
-    :param token: dict
+    The token['iss'] must be either `Config.get_openid_provider()` or in `Config.get_trusted_google_projects()`
+    :param token: a decoded JWT from the authorization header of a request
     """
-    issuer = token['iss']
+    issuer = token_info['iss']
     if issuer == Config.get_openid_provider():
         return
     service_name, _, service_domain = issuer.partition("@")
-    if service_domain in Config.get_trusted_google_projects() and issuer == token['sub']:
+    if service_domain in Config.get_trusted_google_projects() and issuer == token_info['sub']:
         return
     raise AuthenticationException("Token issuer not authorized: {iss}".format(iss=issuer))
 
 
 def get_email_claim(token_info: typing.Dict[str, typing.Any]) -> str:
-    email = token_info.get(OIDC_Claims['email']) or token_info.get('email')
+    """
+    :param token_info: a decoded and verified JWT
+    :return: Retrieve the custom OIDC email claim for the verified JWT
+    """
+    email = token_info.get(OIDC_claims['email']) or token_info.get('email')
     if email:
         return email
     else:

@@ -1,6 +1,5 @@
 """
-This library contains utilities to use secure features of the DCP.
-
+This library contains utilities to use authentication and authorization features of the DCP.
 """
 
 from typing import List
@@ -10,6 +9,13 @@ from ..errors import SecurityException
 
 security_config_not_set_error = "security configuration not set for {}. Use Config.setup() to set."
 
+OIDC_claims = {
+    'email': 'https://auth.data.humancellatlas.org/email',
+    'group': 'https://auth.data.humancellatlas.org/group'
+}
+
+allowed_algorithms = ['RS256']  # for encrypting and decrypting a JWT
+
 
 class Config:
     _openid_provider = "humancellatlas.auth0.com"
@@ -17,12 +23,12 @@ class Config:
     _trusted_google_projects = None
 
     @staticmethod
-    def setup(openid_provider: str = None, auth_url: str = None, trusted_google_projects: List[str] = None):
+    def setup(trusted_google_projects: List[str], *, openid_provider: str = None, auth_url: str = None):
         """
         Set the configuration values
-        :param openid_provider:
+        :param trusted_google_projects: trust service account project domains to allow access to your service.
+        :param openid_provider: the openid provider used to authenticate users.
         :param auth_url: The url for the DCP authentication and authorization provider.
-        :param trusted_google_projects:
         :return:
         """
         Config._openid_provider = openid_provider or Config._openid_provider
@@ -46,9 +52,3 @@ class Config:
         if Config._trusted_google_projects is None:
             raise SecurityException(security_config_not_set_error.format('trusted_google_projects'))
         return Config._trusted_google_projects
-
-
-OIDC_Claims = {
-    'email': 'https://auth.data.humancellatlas.org/email',
-    'group': 'https://auth.data.humancellatlas.org/group'
-}

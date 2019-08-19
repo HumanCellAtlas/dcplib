@@ -35,7 +35,14 @@ class DCPServiceAccountManager:
         return cls(credentials, audience, **kwargs)
 
     @staticmethod
-    def format_secret_id(secret_name, deployment='', service=''):
+    def format_secret_id(secret_name: str, deployment: str='', service: str='') -> str:
+        """
+
+        :param secret_name: the name of the secret.
+        :param deployment: the deployment the secret is stored in.
+        :param service: the service the secret is for.
+        :return: A secretId formatted using the dcp format for secrets.
+        """
         return '/'.join([i for i in ['dcp', service, deployment, secret_name] if i])
 
     def __init__(self,
@@ -60,21 +67,20 @@ class DCPServiceAccountManager:
         self.lifetime = lifetime or self._default_lifetime
         self.token = None
 
-    def get_header(self):
+    def get_authorization_header(self):
         """
-        Generate a new JWT if the old JWT has expired and returns an authorization header for making authenticated
-        requests to DCP components.
+        Generate anGenerate a new JWT if none  the old JWT has expired and returns
+        Generate an authorization header.
 
-        :return: authorization header
+        :return: an authorization header for making authenticated requests to DCP components.
         """
         return {"Authorization": "Bearer {}".format(self.get_jwt())}
 
-    def create_header(self, **kwargs):
+    def create_authorization_header(self, **kwargs):
         """
-        Generates a new JWT and returns it in an authorization header for making authenticated requests to DCP
-        components.
+        Generates a new JWT and returns it in an authorization header.
         :param kwargs: arguments passed through to create_jwt
-        :return: authorization header
+        :return: an authorization header for making authenticated requests to DCP components.
         """
         return {"Authorization": "Bearer {}".format(self.create_jwt(**kwargs))}
 
@@ -86,13 +92,13 @@ class DCPServiceAccountManager:
             self.token = self.create_jwt(self.audience, self.additional_claims)
         return self.token
 
-    def create_jwt(self, audience: List[str], additional_claims=None):
+    def create_jwt(self, audience: List[str], additional_claims=None) -> str:
         """
-        Creates a JWT using the provided audience and additional_claims
+        Creates a JWT using the supplied audience and additional_claims parameters
 
         :param audience:
         :param additional_claims:
-        :return: str
+        :return:
         """
         iat = time.time()
         exp = iat + self.lifetime
@@ -113,12 +119,12 @@ class DCPServiceAccountManager:
             algorithm='RS256').decode()
         return token
 
-    def is_expired(self, token: str):
+    def is_expired(self, token: str) -> bool:
         """
         Check if the provided token has expired.
 
-        :param token:
-        :return: bool
+        :param token: a JWT
+        :return:
         """
         try:
             decoded_token = jwt.decode(token, options=self._options)
