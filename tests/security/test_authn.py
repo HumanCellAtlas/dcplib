@@ -11,7 +11,7 @@ class TestAuthn(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        security.Config.setup(['test.iam.gserviceaccount.com'],
+        security.Config.setup(['dummy.iam.gserviceaccount.com'],
                               openid_provider='https://openid_provider.test',
                               auth_url='https://auth_url.test',
                               )
