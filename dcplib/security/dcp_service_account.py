@@ -5,7 +5,7 @@ from typing import List, Dict
 import jwt
 
 from ..aws_secret import AwsSecret
-from . import allowed_algorithms
+from ..security import allowed_algorithms
 
 
 class DCPServiceAccountManager:
