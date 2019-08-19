@@ -78,8 +78,8 @@ class TestAuthn(unittest.TestCase):
         email = 'email@email.com'
         email_claim = 'email@claim.com'
         tests = [
-            ({'email': email, security.OIDC_Claims['email']: email_claim}, email_claim),
-            ({security.OIDC_Claims['email']: 'email@claim.com'}, email_claim),
+            ({'email': email, security.OIDC_claims['email']: email_claim}, email_claim),
+            ({security.OIDC_claims['email']: 'email@claim.com'}, email_claim),
             ({'email': email}, email)
         ]
 
