@@ -35,7 +35,7 @@ class DCPServiceAccountManager:
         return cls(credentials, audience, **kwargs)
 
     @staticmethod
-    def format_secret_id(secret_name: str, deployment: str='', service: str='') -> str:
+    def format_secret_id(secret_name: str, deployment: str = '', service: str = '') -> str:
         """
 
         :param secret_name: the name of the secret.

@@ -81,11 +81,11 @@ def decode_jwt(token: str, audience: typing.List[str]) -> typing.Optional[typing
     try:
         token_header = jwt.get_unverified_header(token)
         verified_token_info = jwt.decode(token,
-                                  key=public_keys[token_header["kid"]],
-                                  issuer=issuer,
-                                  audience=audience,
-                                  algorithms=allowed_algorithms,
-                                  )
+                                         key=public_keys[token_header["kid"]],
+                                         issuer=issuer,
+                                         audience=audience,
+                                         algorithms=allowed_algorithms,
+                                         )
     except jwt.PyJWTError as ex:  # type: ignore
         raise AuthenticationException('Authorization token is invalid') from ex
     return verified_token_info
