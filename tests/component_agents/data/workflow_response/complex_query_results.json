@@ -1,0 +1,62 @@
+{
+    "results":[
+        {
+            "end":"2019-07-08T05:18:22.476Z",
+            "id":"00000000-0000-0000-0000-000000000000",
+            "labels":{
+                "sample_id":"00000000-0000-0000-0000-000000000000",
+                "cromwell-workflow-id":"cromwell-00000000-0000-0000-0000-000000000000",
+                "project_shortname":"SS2 1 Cell Integration Test",
+                "workflow-version":"smartseq2_v2.4.0",
+                "bundle-version":"2019-07-08T041330.669653Z",
+                "project_uuid":"fake-uuid",
+                "caas-collection-name":"lira-test",
+                "bundle-uuid":"00000000-0000-0000-0000-000000000000",
+                "workflow-name":"AdapterSmartSeq2SingleCell"
+            },
+            "name":"AdapterSmartSeq2SingleCell",
+            "start":"2019-07-08T04:15:00.002Z",
+            "status":"Succeeded",
+            "submission":"2019-07-08T04:14:05.945Z"
+        },
+        {
+            "end":"2019-07-08T05:19:16.987Z",
+            "id":"00000000-0000-0000-0000-000000000000",
+            "labels":{
+                "sample_id":"00000000-0000-0000-0000-000000000000",
+                "cromwell-workflow-id":"cromwell-00000000-0000-0000-0000-000000000000",
+                "project_shortname":"SS2 1 Cell Integration Test",
+                "workflow-version":"smartseq2_v2.4.0",
+                "bundle-version":"2019-07-08T041106.500213Z",
+                "project_uuid":"fake-uuid",
+                "caas-collection-name":"lira-test",
+                "bundle-uuid":"00000000-0000-0000-0000-000000000000",
+                "workflow-name":"AdapterSmartSeq2SingleCell"
+            },
+            "name":"AdapterSmartSeq2SingleCell",
+            "start":"2019-07-08T04:14:19.937Z",
+            "status":"Succeeded",
+            "submission":"2019-07-08T04:12:56.252Z"
+        },
+        {
+            "end":"2019-07-07T05:13:47.275Z",
+            "id":"00000000-0000-0000-0000-000000000000",
+            "labels":{
+                "sample_id":"00000000-0000-0000-0000-000000000000",
+                "cromwell-workflow-id":"cromwell-00000000-0000-0000-0000-000000000000",
+                "project_shortname":"SS2 1 Cell Integration Test",
+                "workflow-version":"smartseq2_v2.4.0",
+                "bundle-version":"2019-07-07T040705.376499Z",
+                "project_uuid":"fake-uuid",
+                "caas-collection-name":"lira-test",
+                "bundle-uuid":"00000000-0000-0000-0000-000000000000",
+                "workflow-name":"AdapterSmartSeq2SingleCell"
+            },
+            "name":"AdapterSmartSeq2SingleCell",
+            "start":"2019-07-07T04:07:53.686Z",
+            "status":"Succeeded",
+            "submission":"2019-07-07T04:07:32.298Z"
+        }
+    ],
+    "totalResultsCount":3
+}
