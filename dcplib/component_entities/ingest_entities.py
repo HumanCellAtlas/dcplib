@@ -221,7 +221,7 @@ class SubmissionEnvelope(EntityBase):
 
     def biomaterials(self):
         return [Biomaterials(biomaterial_data, ingest_api_agent=self.api) for biomaterial_data in
-                self.api.get_all(self.data['_links']['biomaterials']['href'], 'biomaterials', page_size=1000)]
+                self.api.get_all(self.data['_links']['biomaterials']['href'], 'biomaterials', page_size=20)]
 
     def protocols(self):
         return [Protocol(protocol_data, ingest_api_agent=self.api) for protocol_data in
