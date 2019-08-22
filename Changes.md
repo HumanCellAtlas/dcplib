@@ -1,3 +1,9 @@
+# Changes for v3.3.0 (2019-08-22)
+reduce biomaterials end point page size to 20 for ingest api as larger page sizes lead to frequent timeouts (#51)
+Authn  JWT helpers (#45)
+Close handle on ChecksummingBufferedReader exit
+add test for empty bundles (#33)
+
 # Changes for v3.2.1 (2019-08-15)
 metadata project_shortname has been replaced by project_short_name,
 make ingest_entities.Project work with both.
