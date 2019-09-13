@@ -1,3 +1,5 @@
+# Changes for v3.7.0 (2019-09-13)
+
 # Changes for v3.6.0 (2019-09-13)
 
 # Changes for v3.5.0 (2019-09-13)
