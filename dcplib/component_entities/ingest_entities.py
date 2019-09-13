@@ -146,7 +146,7 @@ class SubmissionEnvelope(EntityBase):
     Model an Ingest Submission Envelope entity
     """
 
-    UNPROCESSED_STATUSES = ['Invalid', 'Draft', 'Valid', 'Pending', 'Validating', 'Submitted']
+    UNPROCESSED_STATUSES = ['Invalid', 'Draft', 'Valid', 'Pending', 'Validating']
 
     @classmethod
     def load_by_id(cls, submission_id, ingest_api_agent):
