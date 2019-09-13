@@ -1,3 +1,6 @@
+# Changes for v3.4.0 (2019-09-13)
+include envelopes with submitted status as in process (#52)
+
 # Changes for v3.3.0 (2019-08-22)
 reduce biomaterials end point page size to 20 for ingest api as larger page sizes lead to frequent timeouts (#51)
 Authn  JWT helpers (#45)
