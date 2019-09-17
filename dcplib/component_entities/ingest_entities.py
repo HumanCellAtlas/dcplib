@@ -141,6 +141,23 @@ class Protocol(EntityBase):
             return None
 
 
+class Process(EntityBase):
+
+    def __init__(self, process_data=None, ingest_api_agent=None):
+        self.api = ingest_api_agent
+        self.data = process_data
+
+    @property
+    def input_bundles(self):
+        """
+        :return: input_bundles
+        :rtype: list
+        """
+        content = self.data['content']
+        input_bundles = content.get('input_bundles', [])
+        return input_bundles
+
+
 class SubmissionEnvelope(EntityBase):
     """
     Model an Ingest Submission Envelope entity
@@ -226,6 +243,10 @@ class SubmissionEnvelope(EntityBase):
     def protocols(self):
         return [Protocol(protocol_data, ingest_api_agent=self.api) for protocol_data in
                 self.api.get_all(self.data['_links']['protocols']['href'], 'protocols', page_size=1000)]
+
+    def processes(self):
+        return [Process(process_data, ingest_api_agent=self.api) for process_data in
+                self.api.get_all(self.data['_links']['processes']['href'], 'processes', page_size=20)]
 
     def project(self):
         """ Assumes only one project """
