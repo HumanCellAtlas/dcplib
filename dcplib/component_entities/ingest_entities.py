@@ -150,8 +150,8 @@ class Process(EntityBase):
     @property
     def input_bundles(self):
         """
-        :return: library construction method or None
-        :rtype: str or None
+        :return: input_bundles
+        :rtype: list
         """
         content = self.data['content']
         input_bundles = content.get('input_bundles', [])
