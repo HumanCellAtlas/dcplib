@@ -48,6 +48,5 @@ class TestAuthn(unittest.TestCase):
 
         resp.status_code = 500
         with self.subTest("Request failed"):
-            with self.assertRaises(AuthorizationException) as ex:
+            with self.assertRaises(AuthorizationException):
                 _test(token_info=test_token_info)
-                pass
