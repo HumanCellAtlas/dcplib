@@ -21,6 +21,7 @@ class Config:
     _openid_provider = "humancellatlas.auth0.com"
     _auth_provider = "https://auth.data.humancellatlas.org"
     _trusted_google_projects = None
+    _oidc_email_claim = 'https://auth.data.humancellatlas.org/email'
 
     @staticmethod
     def setup(trusted_google_projects: List[str], *, openid_provider: str = None, auth_url: str = None):
@@ -52,3 +53,7 @@ class Config:
         if Config._trusted_google_projects is None:
             raise SecurityException(security_config_not_set_error.format('trusted_google_projects'))
         return Config._trusted_google_projects
+
+    @staticmethod
+    def get_oidc_email_claim():
+        return Config._oidc_email_claim
