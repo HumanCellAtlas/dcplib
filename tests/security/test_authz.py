@@ -4,8 +4,8 @@ from unittest import mock
 
 from requests import Response
 
-from dcplib.errors import AuthorizationException
 from dcplib import security
+from dcplib.errors import AuthorizationException
 from dcplib.security import authz, DCPServiceAccountManager
 
 
@@ -44,7 +44,7 @@ class TestAuthn(unittest.TestCase):
         resp._content = json.dumps({'result': False}).encode('utf-8')
         with self.subTest("result = False"):
             with self.assertRaises(AuthorizationException):
-                _test(token_info = test_token_info)
+                _test(token_info=test_token_info)
 
         resp.status_code = 500
         with self.subTest("Request failed"):

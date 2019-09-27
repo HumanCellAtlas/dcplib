@@ -2,7 +2,8 @@ import functools
 import typing
 
 import requests
-from requests import Response, HTTPError
+from requests import HTTPError
+
 from dcplib.errors import AuthorizationException
 from dcplib.security import Config, DCPServiceAccountManager
 
