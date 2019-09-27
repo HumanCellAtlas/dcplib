@@ -15,8 +15,7 @@ def assert_authorized(principal: str,
                       actions: typing.List[str],
                       resources: typing.List[str],
                       authorization_header: typing.Dict[str, str]):
-    auth_url = Config.get_auth_url()
-    resp = session.post(f"{auth_url}/v1/policies/evaluate",
+    resp = session.post("{}/v1/policies/evaluate".format(Config.get_auth_url()),
                         headers=authorization_header,
                         json={"action": actions,
                               "resource": resources,
