@@ -215,6 +215,10 @@ class SubmissionEnvelope(EntityBase):
         return self.data['submissionDate']
 
     @property
+    def update_date(self):
+        return self.data['updateDate']
+
+    @property
     def uuid(self):
         return self.data['uuid']['uuid']
 
