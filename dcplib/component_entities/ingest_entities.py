@@ -158,6 +158,13 @@ class Process(EntityBase):
         return input_bundles
 
 
+class SubmissionError(EntityBase):
+
+    def __init__(self, submission_error_data=None, ingest_api_agent=None):
+        self.api = ingest_api_agent
+        self.data = submission_error_data
+
+
 class SubmissionEnvelope(EntityBase):
     """
     Model an Ingest Submission Envelope entity
@@ -215,6 +222,10 @@ class SubmissionEnvelope(EntityBase):
         return self.data['submissionDate']
 
     @property
+    def update_date(self):
+        return self.data['updateDate']
+
+    @property
     def uuid(self):
         return self.data['uuid']['uuid']
 
@@ -247,6 +258,12 @@ class SubmissionEnvelope(EntityBase):
     def processes(self):
         return [Process(process_data, ingest_api_agent=self.api) for process_data in
                 self.api.get_all(self.data['_links']['processes']['href'], 'processes', page_size=20)]
+
+    def submission_errors(self):
+        return [SubmissionError(error_data, ingest_api_agent=self.api) for error_data in
+                self.api.get_all(self.data['_links']['submissionEnvelopeErrors']['href'],
+                                 'submissionErrors',
+                                 page_size=20)]
 
     def project(self):
         """ Assumes only one project """
