@@ -1,3 +1,7 @@
+# Changes for v3.9.0 (2019-10-01)
+skip flaky test
+Add update date and submission errors to ingest entities (#59)
+
 # Changes for v3.8.0 (2019-09-20)
 Update trufflehog regex. (#56)
 Update trufflehog patterns. (#55)
