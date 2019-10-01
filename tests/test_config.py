@@ -127,6 +127,7 @@ class TestConfig(unittest.TestCase):
             config = BogoComponentConfig(deployment=self.deployment_env)
             self.assertEqual('secret1_from_env', config.secret1)
 
+    @unittest.skip("flaky test")
     def test_when_item_is_in_config_but_not_in_env_and_use_env_is_not_set_we_use_config(self):
         with EnvironmentSetup({
             'CONFIG_SOURCE': None,
