@@ -261,7 +261,9 @@ class SubmissionEnvelope(EntityBase):
 
     def submission_errors(self):
         return [SubmissionError(error_data, ingest_api_agent=self.api) for error_data in
-                self.api.get_all(self.data['_links']['submissionEnvelopeErrors']['href'], 'submissionErrors', page_size=20)]
+                self.api.get_all(self.data['_links']['submissionEnvelopeErrors']['href'],
+                                 'submissionErrors',
+                                 page_size=20)]
 
     def project(self):
         """ Assumes only one project """
