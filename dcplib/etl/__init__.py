@@ -27,7 +27,6 @@ logger = logging.getLogger(__name__)
 
 
 class DSSExtractor:
-    default_bundle_query = {'query': {'bool': {'must_not': {'term': {'admin_deleted': True}}}}}
     default_content_type_patterns = ['application/json; dcp-type="metadata*"']
 
     def __init__(self, staging_directory, content_type_patterns: list = None, filename_patterns: list = None,
@@ -73,28 +72,36 @@ class DSSExtractor:
 
             return tb
 
+    def page_bundles(self, query=None, replica="aws", page_size=None):
+        if query is None:
+            yield from self.dss_client.get_bundles_all.paginate(replica=replica, per_page=page_size)
+        else:
+            yield from self.dss_client.post_search.paginate(es_query=query, replica=replica, per_page=page_size)
+
     def extract(self, query=None, max_workers=512, max_dispatchers=1, page_size=500,
                 dispatch_executor_class: concurrent.futures.Executor = concurrent.futures.ThreadPoolExecutor,
                 transformer: callable = None, loader: callable = None, finalizer: callable = None,
                 page_processor: callable = None):
         start = time.time()
         if query is None:
-            query = self.default_bundle_query
-        total_bundles = self.dss_client.post_search(es_query=query, replica="aws")["total_hits"]
-        if total_bundles == 0:
-            logger.error("No bundles found, nothing to do")
-            return
+            total_bundles = 1
+        else:
+            total_bundles = self.dss_client.post_search(es_query=query, replica="aws")["total_hits"]
+            if total_bundles == 0:
+                logger.error("No bundles found, nothing to do")
+                return
         logger.info("Scanning %s bundles", total_bundles)
         extracted_bundle_count, error_bundle_count = 0, 0
         with dispatch_executor_class(max_workers=max_workers) as executor:
-            for page in self.dss_client.post_search.paginate(es_query=query, replica="aws", per_page=page_size):
+            for page in self.page_bundles(query=query, replica="aws", page_size=page_size):
                 logger.info(f"Extracted bundles: {extracted_bundle_count} "
                             f"({extracted_bundle_count/total_bundles:.1%}, {error_bundle_count} errors)")
                 futures = []
                 extracted_results = []
-                for bundle in page['results']:
-                    bundle_uuid, bundle_version = bundle["bundle_fqid"].split(".", 1)
-                    f = executor.submit(self.extract_transform_one, bundle_uuid, bundle_version, transformer)
+                for bundle in page.get('bundles', page["results"]):
+                    if "bundle_fqid" in bundle:
+                        bundle["uuid"], bundle["version"] = bundle["bundle_fqid"].split(".", 1)
+                    f = executor.submit(self.extract_transform_one, bundle["uuid"], bundle["version"], transformer)
                     futures.append(f)
 
                 for future in concurrent.futures.as_completed(futures):
