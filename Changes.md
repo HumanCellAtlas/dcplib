@@ -1,3 +1,5 @@
+# Changes for v3.11.0 (2019-10-09)
+
 # Changes for v3.10.0 (2019-10-09)
 dcplib.etl: use DSS GET bundles/all when no query is given (#60)
 # Changes for v3.9.0 (2019-10-01)
