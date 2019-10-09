@@ -33,7 +33,7 @@ def get_email_claim(token_info: dict):
     if email:
         return email
     else:
-        raise AuthorizationException("{} claim is missing from token.".format(Config.get_oidc_email_claim()))
+        raise AuthorizationException("Email claim {} is missing from token.".format(Config.get_oidc_email_claim()))
 
 
 def authorize(
