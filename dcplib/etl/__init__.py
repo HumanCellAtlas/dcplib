@@ -98,12 +98,8 @@ class DSSExtractor:
                             f"({extracted_bundle_count/total_bundles:.1%}, {error_bundle_count} errors)")
                 futures = []
                 extracted_results = []
-                try:
-                    bundles = page["results"]
-                except KeyError:
-                    bundles = page["bundles"]
-
-                for bundle in page.get('bundles', bundles):
+                bundles = page['bundles'] if 'bundles' in page else page['results']
+                for bundle in bundles:
                     if "bundle_fqid" in bundle:
                         bundle["uuid"], bundle["version"] = bundle["bundle_fqid"].split(".", 1)
                     f = executor.submit(self.extract_transform_one, bundle["uuid"], bundle["version"], transformer)
