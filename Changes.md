@@ -1,3 +1,7 @@
+# Changes for v3.12.0 (2019-10-14)
+handle different format of return values (#61)
+markdown formatting fixes (#54)
+Fusillade Authz helper function (#57)
 # Changes for v3.11.0 (2019-10-09)
 
 # Changes for v3.10.0 (2019-10-09)
