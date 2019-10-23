@@ -26,8 +26,7 @@ from ..networking import HTTPRequest
 logger = logging.getLogger(__name__)
 
 def page_iterator(iterator, page_size):
-    iterable = iter(iterator)
-    return iter(lambda: list(itertools.islice(iterable, page_size)), [])
+    return iter(lambda: list(itertools.islice(iterator, page_size)), [])
 
 class DSSExtractor:
     default_content_type_patterns = ['application/json; dcp-type="metadata*"']
