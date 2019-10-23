@@ -76,7 +76,7 @@ class DSSExtractor:
 
     def page_bundles(self, query=None, replica="aws", page_size=None):
         if query is None:
-            yield from page_iterator(self.list_all_bundles, page_size)
+            yield from page_iterator(self.list_all_bundles(), page_size)
         else:
             yield from self.dss_client.post_search.paginate(es_query=query, replica=replica, per_page=page_size)
 
@@ -117,7 +117,7 @@ class DSSExtractor:
                             f"({extracted_bundle_count/total_bundles:.1%}, {error_bundle_count} errors)")
                 futures = []
                 extracted_results = []
-                bundles = page['bundles'] if 'bundles' in page else page['results']
+                bundles = page['results'] if 'results' in page else page
                 for bundle in bundles:
                     if "bundle_fqid" in bundle:
                         bundle["uuid"], bundle["version"] = bundle["bundle_fqid"].split(".", 1)
