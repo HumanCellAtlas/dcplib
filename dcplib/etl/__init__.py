@@ -17,7 +17,7 @@ Example usage:
     DSSExtractor(staging_directory=".").extract(transformer=tf, loader=ld, finalizer=fn)
 """
 
-import os, sys, json, concurrent.futures, hashlib, logging, threading, time, traceback
+import os, sys, json, concurrent.futures, hashlib, logging, threading, time, traceback, itertools
 from fnmatch import fnmatchcase
 
 import hca
@@ -25,6 +25,8 @@ from ..networking import HTTPRequest
 
 logger = logging.getLogger(__name__)
 
+def page_iterator(iterator, page_size):
+    return iter(lambda: list(itertools.islice(iterator, page_size)), [])
 
 class DSSExtractor:
     default_content_type_patterns = ['application/json; dcp-type="metadata*"']
@@ -74,9 +76,24 @@ class DSSExtractor:
 
     def page_bundles(self, query=None, replica="aws", page_size=None):
         if query is None:
-            yield from self.dss_client.get_bundles_all.paginate(replica=replica, per_page=page_size)
+            yield from page_iterator(self.list_all_bundles(), page_size)
         else:
             yield from self.dss_client.post_search.paginate(es_query=query, replica=replica, per_page=page_size)
+
+    def list_all_bundles(self):
+        for bundle_list_file in os.listdir(f"{self.sd}/bundle_list"):
+            with open(f"{self.sd}/bundle_list/{bundle_list_file}") as fh:
+                for line in fh:
+                    yield json.loads(line)
+
+    def get_list_of_all_bundles(self, prefix):
+        bundles_seen = 0
+        with open(f"{self.sd}/bundle_list/{prefix}.jsonl", "w") as fh:
+            for bundle in self.dss_client.get_bundles_all.iterate(replica="aws", per_page=500, prefix=prefix):
+                json.dump(bundle, fh)
+                fh.write("\n")
+                bundles_seen += 1
+        return bundles_seen
 
     def extract(self, query=None, max_workers=512, max_dispatchers=1, page_size=500,
                 dispatch_executor_class: concurrent.futures.Executor = concurrent.futures.ThreadPoolExecutor,
@@ -84,7 +101,9 @@ class DSSExtractor:
                 page_processor: callable = None):
         start = time.time()
         if query is None:
-            total_bundles = 1
+            os.makedirs(f"{self.sd}/bundle_list", exist_ok=True)
+            with dispatch_executor_class(max_workers=max_workers) as executor:
+                total_bundles = sum(executor.map(self.get_list_of_all_bundles, (f'{i:02x}' for i in range(256))))
         else:
             total_bundles = self.dss_client.post_search(es_query=query, replica="aws")["total_hits"]
             if total_bundles == 0:
@@ -98,7 +117,7 @@ class DSSExtractor:
                             f"({extracted_bundle_count/total_bundles:.1%}, {error_bundle_count} errors)")
                 futures = []
                 extracted_results = []
-                bundles = page['bundles'] if 'bundles' in page else page['results']
+                bundles = page['results'] if 'results' in page else page
                 for bundle in bundles:
                     if "bundle_fqid" in bundle:
                         bundle["uuid"], bundle["version"] = bundle["bundle_fqid"].split(".", 1)
