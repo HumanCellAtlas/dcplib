@@ -8,7 +8,7 @@ except ImportError:
 
 import boto3
 
-from . import EnvironmentSetup, fixture_file_path
+from . import EnvironmentSetup, ExistingAwsSecretTestFixture, fixture_file_path
 
 from dcplib.aws_secret import AwsSecret
 from dcplib.config import Config
@@ -38,12 +38,11 @@ class TestConfig(unittest.TestCase):
 
     def setUp(self):
         self.deployment_env = "bogo_env_{}".format(uuid.uuid4())
-        self.aws_secret = AwsSecret(name="dcp/bogo_component/{}/secrets".format(self.deployment_env))
-        self.aws_secret.update('{"secret1":"secret1_from_cloud"}')
+        self.secret_name = "dcp/bogo_component/{}/secrets".format(self.deployment_env)
         BogoComponentConfig.reset()
 
     def tearDown(self):
-        self.aws_secret.delete()
+        pass
 
     def test_from_file(self):
         with EnvironmentSetup({
@@ -53,26 +52,25 @@ class TestConfig(unittest.TestCase):
             self.assertEqual('value_from_file', config.secret1)
 
     def test_from_aws(self):
-        with EnvironmentSetup({
-            'CONFIG_SOURCE': None
-        }):
-            config = BogoComponentConfig(deployment=self.deployment_env, source='aws')
-            self.assertEqual('secret1_from_cloud', config.secret1)
+        with ExistingAwsSecretTestFixture(secret_name=self.secret_name,
+                                          secret_value='{"secret1":"secret1_from_cloud"}'):
+            with EnvironmentSetup({
+                'CONFIG_SOURCE': None
+            }):
+                config = BogoComponentConfig(deployment=self.deployment_env, source='aws')
+                self.assertEqual('secret1_from_cloud', config.secret1)
 
     def test_custom_secret_name(self):
-        custom_named_secret = AwsSecret(name="dcp/bogo_component/{}/custom-secret-name".format(self.deployment_env))
-        custom_named_secret.update('{"secret1":"custom"}')
+        custom_secret_name = "dcp/bogo_component/{}/custom-secret-name".format(self.deployment_env)
+        with ExistingAwsSecretTestFixture(secret_name=custom_secret_name, secret_value='{"secret1":"custom"}'):
 
-        class BogoComponentCustomConfig(Config):
-            def __init__(self, *args, **kwargs):
-                # kwargs['secret_name'] = 'custom-secret-name'
-                super(BogoComponentCustomConfig, self).__init__(
-                    'bogo_component', secret_name='custom-secret-name', **kwargs)
+            class BogoComponentCustomConfig(Config):
+                def __init__(self, *args, **kwargs):
+                    super(BogoComponentCustomConfig, self).__init__(
+                        'bogo_component', secret_name='custom-secret-name', **kwargs)
 
-        config = BogoComponentCustomConfig(deployment=self.deployment_env, source='aws')
-        self.assertEqual('custom', config.secret1)
-
-        custom_named_secret.delete()
+            config = BogoComponentCustomConfig(deployment=self.deployment_env, source='aws')
+            self.assertEqual('custom', config.secret1)
 
     @patch('dcplib.config.AwsSecret')
     def test_singletonness(self, mock_AwsSecret):
@@ -108,47 +106,54 @@ class TestConfig(unittest.TestCase):
                 print(config.secret_that_we_never_put_into_config)
 
     def test_when_item_is_not_in_config_but_is_in_env_and_use_env_is_not_set_we_raise(self):
-        self.aws_secret.update('{}')
-        with EnvironmentSetup({
-            'CONFIG_SOURCE': None,
-            'SECRET1': 'secret1_from_env'
-        }):
-            with self.assertRaises(RuntimeError):
-                config = BogoComponentConfig(deployment=self.deployment_env)
-                print(config.secret1)
+        with ExistingAwsSecretTestFixture(secret_name=self.secret_name, secret_value='{}'):
+
+            with EnvironmentSetup({
+                'CONFIG_SOURCE': None,
+                'SECRET1': 'secret1_from_env'
+            }):
+                with self.assertRaises(RuntimeError):
+                    config = BogoComponentConfig(deployment=self.deployment_env)
+                    print(config.secret1)
 
     def test_when_item_is_not_in_config_but_is_in_env_and_use_env_is_set_we_use_env(self):
-        self.aws_secret.update('{}')
-        BogoComponentConfig.use_env = True
-        with EnvironmentSetup({
-            'CONFIG_SOURCE': None,
-            'SECRET1': 'secret1_from_env'
-        }):
-            config = BogoComponentConfig(deployment=self.deployment_env)
-            self.assertEqual('secret1_from_env', config.secret1)
+        with ExistingAwsSecretTestFixture(secret_name=self.secret_name, secret_value='{}'):
 
-    @unittest.skip("flaky test")
+            BogoComponentConfig.use_env = True
+            with EnvironmentSetup({
+                'CONFIG_SOURCE': None,
+                'SECRET1': 'secret1_from_env'
+            }):
+                config = BogoComponentConfig(deployment=self.deployment_env)
+                self.assertEqual('secret1_from_env', config.secret1)
+
     def test_when_item_is_in_config_but_not_in_env_and_use_env_is_not_set_we_use_config(self):
-        with EnvironmentSetup({
-            'CONFIG_SOURCE': None,
-        }):
-            config = BogoComponentConfig(deployment=self.deployment_env)
-            self.assertEqual('secret1_from_cloud', config.secret1)
+        with ExistingAwsSecretTestFixture(secret_name=self.secret_name,
+                                          secret_value='{"secret1":"secret1_from_cloud"}'):
+            with EnvironmentSetup({
+                'CONFIG_SOURCE': None,
+            }):
+                config = BogoComponentConfig(deployment=self.deployment_env)
+                self.assertEqual('secret1_from_cloud', config.secret1)
 
     def test_when_item_is_in_config_but_not_in_env_and_use_env_is_set_we_use_config(self):
-        BogoComponentConfig.use_env = True
-        with EnvironmentSetup({
-            'CONFIG_SOURCE': None,
-            'SECRET1': 'secret1_from_env'
-        }):
-            config = BogoComponentConfig(deployment=self.deployment_env)
-            self.assertEqual('secret1_from_env', config.secret1)
+        with ExistingAwsSecretTestFixture(secret_name=self.secret_name,
+                                          secret_value='{"secret1":"secret1_from_cloud"}'):
+            BogoComponentConfig.use_env = True
+            with EnvironmentSetup({
+                'CONFIG_SOURCE': None,
+                'SECRET1': 'secret1_from_env'
+            }):
+                config = BogoComponentConfig(deployment=self.deployment_env)
+                self.assertEqual('secret1_from_env', config.secret1)
 
     def test_when_item_is_in_config_and_is_in_env_and_use_env_is_set_we_use_env(self):
-        BogoComponentConfig.use_env = True
-        with EnvironmentSetup({
-            'CONFIG_SOURCE': None,
-            'SECRET1': 'secret1_from_env'
-        }):
-            config = BogoComponentConfig(deployment=self.deployment_env)
-            self.assertEqual('secret1_from_env', config.secret1)
+        with ExistingAwsSecretTestFixture(secret_name=self.secret_name,
+                                          secret_value='{"secret1":"secret1_from_cloud"}'):
+            BogoComponentConfig.use_env = True
+            with EnvironmentSetup({
+                'CONFIG_SOURCE': None,
+                'SECRET1': 'secret1_from_env'
+            }):
+                config = BogoComponentConfig(deployment=self.deployment_env)
+                self.assertEqual('secret1_from_env', config.secret1)
