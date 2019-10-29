@@ -1,8 +1,12 @@
+from time import sleep
+
 import boto3
 from botocore.errorfactory import ClientError
 
 
 class AwsSecret:
+
+    AWS_SECRETS_MGR_SETTLE_TIME_SEC = 2
 
     """
     Wrapper for AWS secrets.
@@ -64,6 +68,7 @@ class AwsSecret:
             raise RuntimeError("No such secret: {}".format(self.name))
         if not self.is_deleted:
             self.secrets_mgr.delete_secret(SecretId=self.arn)
+            sleep(self.AWS_SECRETS_MGR_SETTLE_TIME_SEC)  # eventual consistency
             self._load()
 
     def _load(self):
