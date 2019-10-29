@@ -2,6 +2,7 @@ import sys
 import unittest
 
 from mock import patch
+from time import sleep
 
 import boto3
 
@@ -67,6 +68,7 @@ class TestAwsSecret(unittest.TestCase):
         with ExistingAwsSecretTestFixture() as existing_secret:
             secret = AwsSecret(name=existing_secret.name)
             secret.update(value='{"foo":"bar"}')
+            sleep(AwsSecret.AWS_SECRETS_MGR_SETTLE_TIME_SEC)
             self.assertEqual(self.secrets_mgr.get_secret_value(SecretId=existing_secret.arn)['SecretString'],
                              '{"foo":"bar"}')
 
