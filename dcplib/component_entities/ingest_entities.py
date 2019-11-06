@@ -141,12 +141,36 @@ class Protocol(EntityBase):
             return None
 
 
+class Process(EntityBase):
+
+    def __init__(self, process_data=None, ingest_api_agent=None):
+        self.api = ingest_api_agent
+        self.data = process_data
+
+    @property
+    def input_bundles(self):
+        """
+        :return: input_bundles
+        :rtype: list
+        """
+        content = self.data['content']
+        input_bundles = content.get('input_bundles', [])
+        return input_bundles
+
+
+class SubmissionError(EntityBase):
+
+    def __init__(self, submission_error_data=None, ingest_api_agent=None):
+        self.api = ingest_api_agent
+        self.data = submission_error_data
+
+
 class SubmissionEnvelope(EntityBase):
     """
     Model an Ingest Submission Envelope entity
     """
 
-    UNPROCESSED_STATUSES = ['Invalid', 'Draft', 'Valid', 'Pending', 'Validating', 'Submitted']
+    UNPROCESSED_STATUSES = ['Invalid', 'Draft', 'Valid', 'Pending', 'Validating']
 
     @classmethod
     def load_by_id(cls, submission_id, ingest_api_agent):
@@ -198,6 +222,10 @@ class SubmissionEnvelope(EntityBase):
         return self.data['submissionDate']
 
     @property
+    def update_date(self):
+        return self.data['updateDate']
+
+    @property
     def uuid(self):
         return self.data['uuid']['uuid']
 
@@ -221,11 +249,21 @@ class SubmissionEnvelope(EntityBase):
 
     def biomaterials(self):
         return [Biomaterials(biomaterial_data, ingest_api_agent=self.api) for biomaterial_data in
-                self.api.get_all(self.data['_links']['biomaterials']['href'], 'biomaterials', page_size=1000)]
+                self.api.get_all(self.data['_links']['biomaterials']['href'], 'biomaterials', page_size=20)]
 
     def protocols(self):
         return [Protocol(protocol_data, ingest_api_agent=self.api) for protocol_data in
                 self.api.get_all(self.data['_links']['protocols']['href'], 'protocols', page_size=1000)]
+
+    def processes(self):
+        return [Process(process_data, ingest_api_agent=self.api) for process_data in
+                self.api.get_all(self.data['_links']['processes']['href'], 'processes', page_size=20)]
+
+    def submission_errors(self):
+        return [SubmissionError(error_data, ingest_api_agent=self.api) for error_data in
+                self.api.get_all(self.data['_links']['submissionEnvelopeErrors']['href'],
+                                 'submissionErrors',
+                                 page_size=20)]
 
     def project(self):
         """ Assumes only one project """

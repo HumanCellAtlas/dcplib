@@ -17,7 +17,7 @@ Example usage:
     DSSExtractor(staging_directory=".").extract(transformer=tf, loader=ld, finalizer=fn)
 """
 
-import os, sys, json, concurrent.futures, hashlib, logging, threading, time, traceback
+import os, sys, json, concurrent.futures, hashlib, logging, threading, time, traceback, itertools
 from fnmatch import fnmatchcase
 
 import hca
@@ -25,9 +25,10 @@ from ..networking import HTTPRequest
 
 logger = logging.getLogger(__name__)
 
+def page_iterator(iterator, page_size):
+    return iter(lambda: list(itertools.islice(iterator, page_size)), [])
 
 class DSSExtractor:
-    default_bundle_query = {'query': {'bool': {'must_not': {'term': {'admin_deleted': True}}}}}
     default_content_type_patterns = ['application/json; dcp-type="metadata*"']
 
     def __init__(self, staging_directory, content_type_patterns: list = None, filename_patterns: list = None,
@@ -73,28 +74,54 @@ class DSSExtractor:
 
             return tb
 
+    def page_bundles(self, query=None, replica="aws", page_size=None):
+        if query is None:
+            yield from page_iterator(self.list_all_bundles(), page_size)
+        else:
+            yield from self.dss_client.post_search.paginate(es_query=query, replica=replica, per_page=page_size)
+
+    def list_all_bundles(self):
+        for bundle_list_file in os.listdir(f"{self.sd}/bundle_list"):
+            with open(f"{self.sd}/bundle_list/{bundle_list_file}") as fh:
+                for line in fh:
+                    yield json.loads(line)
+
+    def get_list_of_all_bundles(self, prefix):
+        bundles_seen = 0
+        with open(f"{self.sd}/bundle_list/{prefix}.jsonl", "w") as fh:
+            for bundle in self.dss_client.get_bundles_all.iterate(replica="aws", per_page=500, prefix=prefix):
+                json.dump(bundle, fh)
+                fh.write("\n")
+                bundles_seen += 1
+        return bundles_seen
+
     def extract(self, query=None, max_workers=512, max_dispatchers=1, page_size=500,
                 dispatch_executor_class: concurrent.futures.Executor = concurrent.futures.ThreadPoolExecutor,
                 transformer: callable = None, loader: callable = None, finalizer: callable = None,
                 page_processor: callable = None):
         start = time.time()
         if query is None:
-            query = self.default_bundle_query
-        total_bundles = self.dss_client.post_search(es_query=query, replica="aws")["total_hits"]
-        if total_bundles == 0:
-            logger.error("No bundles found, nothing to do")
-            return
+            os.makedirs(f"{self.sd}/bundle_list", exist_ok=True)
+            with dispatch_executor_class(max_workers=max_workers) as executor:
+                total_bundles = sum(executor.map(self.get_list_of_all_bundles, (f'{i:02x}' for i in range(256))))
+        else:
+            total_bundles = self.dss_client.post_search(es_query=query, replica="aws")["total_hits"]
+            if total_bundles == 0:
+                logger.error("No bundles found, nothing to do")
+                return
         logger.info("Scanning %s bundles", total_bundles)
         extracted_bundle_count, error_bundle_count = 0, 0
         with dispatch_executor_class(max_workers=max_workers) as executor:
-            for page in self.dss_client.post_search.paginate(es_query=query, replica="aws", per_page=page_size):
+            for page in self.page_bundles(query=query, replica="aws", page_size=page_size):
                 logger.info(f"Extracted bundles: {extracted_bundle_count} "
                             f"({extracted_bundle_count/total_bundles:.1%}, {error_bundle_count} errors)")
                 futures = []
                 extracted_results = []
-                for bundle in page['results']:
-                    bundle_uuid, bundle_version = bundle["bundle_fqid"].split(".", 1)
-                    f = executor.submit(self.extract_transform_one, bundle_uuid, bundle_version, transformer)
+                bundles = page['results'] if 'results' in page else page
+                for bundle in bundles:
+                    if "bundle_fqid" in bundle:
+                        bundle["uuid"], bundle["version"] = bundle["bundle_fqid"].split(".", 1)
+                    f = executor.submit(self.extract_transform_one, bundle["uuid"], bundle["version"], transformer)
                     futures.append(f)
 
                 for future in concurrent.futures.as_completed(futures):

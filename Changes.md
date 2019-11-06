@@ -1,11 +1,46 @@
+# Changes for v3.12.0 (2019-10-14)
+handle different format of return values (#61)
+markdown formatting fixes (#54)
+Fusillade Authz helper function (#57)
+# Changes for v3.11.0 (2019-10-09)
+
+# Changes for v3.10.0 (2019-10-09)
+dcplib.etl: use DSS GET bundles/all when no query is given (#60)
+# Changes for v3.9.0 (2019-10-01)
+skip flaky test
+Add update date and submission errors to ingest entities (#59)
+
+# Changes for v3.8.0 (2019-09-20)
+Update trufflehog regex. (#56)
+Update trufflehog patterns. (#55)
+add processes to ingest entities (#53)
+
+# Changes for v3.7.0 (2019-09-13)
+
+# Changes for v3.6.0 (2019-09-13)
+
+# Changes for v3.5.0 (2019-09-13)
+
+# Changes for v3.4.0 (2019-09-13)
+include envelopes with submitted status as in process (#52)
+
+# Changes for v3.3.0 (2019-08-22)
+
+- Reduce biomaterials end point page size to 20 for ingest api as larger page sizes lead to frequent timeouts (#51)
+- Authn  JWT helpers (#45)
+- Close handle on ChecksummingBufferedReader exit
+- Add test for empty bundles (#33)
+
 # Changes for v3.2.1 (2019-08-15)
-metadata project_shortname has been replaced by project_short_name,
-make ingest_entities.Project work with both.
+
+- Metadata project_shortname has been replaced by project_short_name,
+  make ingest_entities.Project work with both.
 
 # Changes for v3.2.0 (2019-08-14)
-Added IngestApiAgent and ingest_entities (SubmissionEnvelope etc...)
-which are used by data-monitoring-dashboard, dcp-diag and soon the dcp
-integration tests.
+
+- Added IngestApiAgent and ingest_entities (SubmissionEnvelope etc...)
+  which are used by data-monitoring-dashboard, dcp-diag and soon the dcp
+  integration tests.
 
 # Changes for v3.1.0 (2019-08-08)
 
@@ -14,7 +49,8 @@ integration tests.
 - Drop support for Python 3.4
 
 # Changes for v3.0.0 (2019-07-30)
-Drop support for Python 2.7, add 3.7
+
+- Drop support for Python 2.7, add 3.7
 
 # Changes for v2.1.2 (2019-07-26)
 
@@ -49,17 +85,25 @@ Drop support for Python 2.7, add 3.7
 - ETL fixes: Configurable dispatch for empty bundles (#18); do not configure global logging
 
 # Changes for v2.0.0 (2019-04-26)
-Fix release
+
+- Fix release
+
 # Changes for v1.1.0 (2019-04-26)
 
 # Changes for v1.10.0 (2019-04-26)
-Remove gpg signing from twine
+
+- Remove gpg signing from twine
+
 # Changes for v1.9.0 (2019-04-26)
 
 # Changes for v1.8.0 (2019-04-26)
-Added twine to requirements-dev
+
+- Added twine to requirements-dev
+
 # Changes for v1.7.0 (2019-04-26)
-Adding module for working with SQS. (#20)
+
+- Adding module for working with SQS. (#20)
+
 # Changes for v1.6.6 (2019-04-25)
 
 - networking.HTTPRequest: set max redirects to a high number (#19)
@@ -111,30 +155,38 @@ Adding module for working with SQS. (#20)
 - Add dcplib.networking.http (#5)
 
 # Changes for v1.4.0 (2018-08-15)
-Config: allow customization of secret name
+
+- Config: allow customization of secret name
 
 # Changes for v1.3.2 (2018-08-01)
 * S3Etag is now optionally configured with chunk size
 * ChecksummingBufferedReader is now optionally configured with chunk size
 
 # Changes for v1.3.1 (2018-07-31)
-Add s3_multipart.MULTIPART_THRESHOLD and tests for get_s3_multipart_chunk_size()
+
+- Add s3_multipart.MULTIPART_THRESHOLD and tests for get_s3_multipart_chunk_size()
 
 # Changes for v1.3.0 (2018-07-31)
-Add get_s3_multipart_chunk_size method
+
+- Add get_s3_multipart_chunk_size method
 
 # Changes for v1.2.1 (2018-05-24)
-Python 2.7 compatiility
+
+- Python 2.7 compatiility
 
 # Changes for v1.2.0 (2018-05-24)
-Add Config and AwsSecret classes
+
+- Add Config and AwsSecret classes
 
 # Changes for v1.1.0 (2018-02-07)
-Fold checksumming_io into dcplib.
+
+- Fold checksumming_io into dcplib.
 
 # Changes for v1.0.1 (2017-11-10)
-Retry.
+
+- Retry.
 
 # Changes for v1.0.0 (2017-11-10)
-MediaType and DcpMediaType classes.
+
+- MediaType and DcpMediaType classes.
 
