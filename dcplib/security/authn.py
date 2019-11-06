@@ -65,7 +65,9 @@ def get_public_keys(openid_provider: str):
 
 def decode_jwt(token: str, audience: typing.List[str]) -> typing.Optional[typing.Mapping]:
     """
-    Verify and decode the JWT from the request.
+    Verify and decode the JWT from the request. If */userinfo or */tokeninfo endpoints are present in the audience,
+    request that info and return it in the results, else return the decoded token. If both */userinfo or */tokeninfo
+    endpoints are in the audiences, whichever appears first in the audience is used.
 
     :param token: the Authorization header in the request.
     :param audience: the expected audience for the JWT
@@ -90,7 +92,18 @@ def decode_jwt(token: str, audience: typing.List[str]) -> typing.Optional[typing
                                          )
     except jwt.PyJWTError as ex:  # type: ignore
         raise AuthenticationException('Authorization token is invalid') from ex
-    return verified_token_info
+    tokeninfo_endpoint = [i for i in verified_token_info['aud'] if i.endswith('userinfo') or i.endswith('tokeninfo')]
+    if tokeninfo_endpoint:
+        # Use the OIDC tokeninfo endpoint to get info about the user.
+        response = requests.get(
+            get_openid_config(Config.get_openid_provider()),
+            headers={'Authorization': f"Bearer {token}"})
+        response.raise_for_status()
+        return response.json()
+    else:
+        # If No OIDC tokeninfo endpoint is present then this is a google service account and there is no info to
+        # retrieve
+        return verified_token_info
 
 
 def assert_authorized_issuer(token_info: typing.Mapping[str, typing.Any]) -> None:
