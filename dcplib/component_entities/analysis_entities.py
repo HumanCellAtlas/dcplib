@@ -27,8 +27,8 @@ class Workflow(EntityBase):
         "submission": "2019-01-06T20:16:30.804Z"
     }
 
-    Among all of the fields, the labels is usually trivial and expensive to query for. So the default response from
-    Secondary-analysis service (Cromwell API) will not contain the `labels` field unless the client is querying with
+    Among all of the fields, the labels are usually trivial and expensive to query for. So the default response from
+    Pipeline Execution service (Cromwell API) will not contain the `labels` field unless the client is querying with
     specific parameters. This model is designed to comply with that rule, which means the `labels` is an optional
     property to this Workflow object, and will set to None is not provided. However, missing the `labels` field can
     cause the downstream functions depending on this field to run into errors.
