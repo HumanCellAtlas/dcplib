@@ -21,32 +21,49 @@ class TestAnalysisAgent(unittest.TestCase):
 
     def test_analysis_agent_raises_exception_when_no_deployment_specified(self):
         self.assertRaises(KeyError, AnalysisAgent)
-    
+
     @mock.patch.dict(os.environ, {'DEPLOYMENT_STAGE': 'integration'})
-    def test_analysis_agent_can_resolve_the_right_collection_for_integration_deployment(self):
-        with mock.patch('dcplib.component_agents.analysis_agent.AnalysisAgent.analysis_gcp_creds', None):
+    def test_analysis_agent_can_resolve_the_right_collection_for_integration_deployment(
+        self
+    ):
+        with mock.patch(
+            'dcplib.component_agents.analysis_agent.AnalysisAgent.analysis_gcp_creds',
+            None,
+        ):
             agent = AnalysisAgent()
             self.assertEqual(agent.cromwell_collection, 'lira-int')
-    
+
     @mock.patch.dict(os.environ, {'DEPLOYMENT_STAGE': 'integration'})
     def test_get_workflows_by_project_uuid_can_fetch_simple_workflow_results(self):
         response = mock.MagicMock
         response.json = mock.MagicMock(return_value=self.simple_workflow_response)
 
-        with mock.patch('dcplib.component_agents.analysis_agent.AnalysisAgent.analysis_gcp_creds', None), mock.patch('cromwell_tools.api.query', response):
+        with mock.patch(
+            'dcplib.component_agents.analysis_agent.AnalysisAgent.analysis_gcp_creds',
+            None,
+        ), mock.patch('cromwell_tools.api.query', response):
             agent = AnalysisAgent()
-            result = agent.get_workflows_by_project_uuid(project_uuid='fake-uuid', with_labels=False)
-            self.assertEqual(len(result), self.simple_workflow_response['totalResultsCount'])
-            
-    
+            result = agent.get_workflows_by_project_uuid(
+                project_uuid='fake-uuid', with_labels=False
+            )
+            self.assertEqual(
+                len(result), self.simple_workflow_response['totalResultsCount']
+            )
+
     @mock.patch.dict(os.environ, {'DEPLOYMENT_STAGE': 'integration'})
     def test_get_workflows_by_project_uuid_can_fetch_complex_workflow_results(self):
         response = mock.MagicMock
         response.json = mock.MagicMock(return_value=self.complex_workflow_response)
 
-        with mock.patch('dcplib.component_agents.analysis_agent.AnalysisAgent.analysis_gcp_creds', None), mock.patch('cromwell_tools.api.query', response):
+        with mock.patch(
+            'dcplib.component_agents.analysis_agent.AnalysisAgent.analysis_gcp_creds',
+            None,
+        ), mock.patch('cromwell_tools.api.query', response):
             agent = AnalysisAgent()
-            result = agent.get_workflows_by_project_uuid(project_uuid='fake-uuid', with_labels=False)
-            self.assertEqual(len(result), self.complex_workflow_response['totalResultsCount'])
+            result = agent.get_workflows_by_project_uuid(
+                project_uuid='fake-uuid', with_labels=False
+            )
+            self.assertEqual(
+                len(result), self.complex_workflow_response['totalResultsCount']
+            )
             self.assertEqual(result[0].get('labels').get('project_uuid'), 'fake-uuid')
-
