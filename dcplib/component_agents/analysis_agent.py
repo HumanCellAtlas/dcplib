@@ -60,7 +60,7 @@ class AnalysisAgent:
         query_dict = {"label": {"project_uuid": project_uuid}}
         if with_labels:
             query_dict['additionalQueryResultFields'] = ['labels']
-        return _query_cromwell(query_dict=query_dict)
+        return self._query_cromwell(query_dict=query_dict)
 
     def get_workflows_by_workflow_uuid(
         self, workflow_uuid: str, with_labels: bool = True
@@ -77,7 +77,7 @@ class AnalysisAgent:
         query_dict = {'id': workflow_uuid}
         if with_labels:
             query_dict['additionalQueryResultFields'] = ['labels']
-        return _query_cromwell(query_dict=query_dict)
+        return self._query_cromwell(query_dict=query_dict)
 
     def get_workflows_by_bundle_uuid(
         self, bundle_uuid: str, bundle_version: str = None, with_labels: bool = True
@@ -98,4 +98,4 @@ class AnalysisAgent:
 
         if bundle_version:
             query_dict['label']['bundle-version'] = bundle_version
-        return _query_cromwell(query_dict=query_dict)
+        return self._query_cromwell(query_dict=query_dict)
