@@ -38,9 +38,12 @@ class Workflow(EntityBase):
         self._load_data(workflow_data)
 
     def __eq__(self, other):
-        return (isinstance(self, type(other)) and isinstance(other, type(self)) and (
-            self.uuid, self.name, self.status, self.start_time, self.end_time) == (
-                other.uuid, other.name, other.status, other.start_time, other.end_time))
+        return (
+            isinstance(self, type(other))
+            and isinstance(other, type(self))
+            and (self.uuid, self.name, self.status, self.start_time, self.end_time)
+            == (other.uuid, other.name, other.status, other.start_time, other.end_time)
+        )
 
     def __hash__(self):
         """Calculate the hash of a subset of properties.
@@ -52,19 +55,25 @@ class Workflow(EntityBase):
 
     def __str__(self, prefix: str = "", verbose: bool = False):
 
-        workflow_info = colored(f"{prefix}Workflow {self.uuid}\n", 'green') + \
-                                f"{prefix}    name={self.name}\n" \
-                                f"{prefix}    status={self.status}\n"
+        workflow_info = (
+            colored(f"{prefix}Workflow {self.uuid}\n", 'green')
+            + f"{prefix}    name={self.name}\n"
+            f"{prefix}    status={self.status}\n"
+        )
         if verbose:
-            workflow_info += f"{prefix}    submission_time={self.submission_time}\n" \
-                             f"{prefix}    start_time={self.start_time}\n" \
-                             f"{prefix}    end_time={self.end_time}\n"
+            workflow_info += (
+                f"{prefix}    submission_time={self.submission_time}\n"
+                f"{prefix}    start_time={self.start_time}\n"
+                f"{prefix}    end_time={self.end_time}\n"
+            )
 
         if self.labels:
             workflow_info += colored(f"{prefix}    labels: \n", 'blue')
             for label_key, label_value in self.labels.items():
                 if label_value:
-                    workflow_info += colored(f"{prefix}        {label_key}={label_value}\n")
+                    workflow_info += colored(
+                        f"{prefix}        {label_key}={label_value}\n"
+                    )
         return workflow_info
 
     def __repr__(self):
@@ -86,9 +95,11 @@ class Workflow(EntityBase):
                 'bundle-uuid': workflow_data['labels'].get('bundle-uuid', ''),
                 'bundle-version': workflow_data['labels'].get('bundle-version', ''),
                 'project_uuid': workflow_data['labels'].get('project_uuid', ''),
-                'project_shortname': workflow_data['labels'].get('project_shortname', ''),
+                'project_shortname': workflow_data['labels'].get(
+                    'project_shortname', ''
+                ),
                 'workflow-version': workflow_data['labels'].get('workflow-version', ''),
-                'workflow-name': workflow_data['labels'].get('workflow-name', '')
+                'workflow-name': workflow_data['labels'].get('workflow-name', ''),
             }
 
     @property
@@ -119,20 +130,31 @@ class Workflow(EntityBase):
     def labels(self):
         return self._labels
 
-    def print(self, prefix: str = "", verbose: bool = False, associated_entities_to_show: str = None):
+    def print(
+        self,
+        prefix: str = "",
+        verbose: bool = False,
+        associated_entities_to_show: str = None,
+    ):
         print(self.__str__(prefix=prefix, verbose=verbose))
         if associated_entities_to_show:
             prefix = f"{prefix}    "
 
             # Show associated bundle
             # Will raise an error when the `labels` property is missing
-            if any(keyword in associated_entities_to_show for keyword in ('bundles', 'bundle', 'all')):
+            if any(
+                keyword in associated_entities_to_show
+                for keyword in ('bundles', 'bundle', 'all')
+            ):
                 print(f"{prefix}Bundle:")
                 print(prefix + "    " + self.labels.get('bundle-uuid'))
 
             # Show associated project
             # Will raise an error when the `labels` property is missing
-            if any(keyword in associated_entities_to_show for keyword in ('projects', 'project', 'all')):
+            if any(
+                keyword in associated_entities_to_show
+                for keyword in ('projects', 'project', 'all')
+            ):
                 print(f"{prefix}Project Shortname:")
                 print(prefix + "    " + self.labels.get('project_shortname'))
                 print(f"{prefix}Project UUID:")

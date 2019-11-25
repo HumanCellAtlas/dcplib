@@ -12,10 +12,13 @@ class AnalysisAgent:
     A collection of functions for working with Cromwell-as-a-Service APIs directly, 
     which is the workflow execution engine of Pipelines Execution Service.
     """
+
     def __init__(self) -> None:
         deployment = os.environ['DEPLOYMENT_STAGE']
         self.cromwell_url = 'https://cromwell.caas-prod.broadinstitute.org'
-        self.cromwell_collection = 'lira-int' if deployment == 'integration' else f'lira-{deployment}'
+        self.cromwell_collection = (
+            'lira-int' if deployment == 'integration' else f'lira-{deployment}'
+        )
         self.auth = cromwell_tools.cromwell_auth.CromwellAuth.harmonize_credentials(
             service_account_key=self.analysis_gcp_creds, url=self.cromwell_url
         )
