@@ -9,7 +9,7 @@ from typing import List, Dict
 
 class AnalysisAgent:
     """
-    A collection of functions for working with Cromwell-as-a-Service APIs directly, 
+    A collection of functions for working with Cromwell-as-a-Service APIs directly,
     which is the workflow execution engine of Pipelines Execution Service.
     """
 
