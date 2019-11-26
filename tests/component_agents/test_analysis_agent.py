@@ -84,7 +84,7 @@ class TestAnalysisAgent(unittest.TestCase):
             self.assertEqual(
                 len(result), self.simple_workflow_response['totalResultsCount']
             )
-    
+
     @mock.patch.dict(os.environ, {'DEPLOYMENT_STAGE': 'integration'})
     def test_get_workflows_by_bundle_uuid_can_fetch_simple_workflow_results(self):
         response = mock.MagicMock
@@ -101,7 +101,7 @@ class TestAnalysisAgent(unittest.TestCase):
             self.assertEqual(
                 len(result), self.simple_workflow_response['totalResultsCount']
             )
-    
+
     @mock.patch.dict(os.environ, {'DEPLOYMENT_STAGE': 'integration'})
     def test_get_workflows_by_bundle_uuid_can_fetch_simple_workflow_results_with_bundle_version(self):
         response = mock.MagicMock
