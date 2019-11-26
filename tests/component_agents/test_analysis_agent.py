@@ -7,16 +7,16 @@ from pathlib import Path
 from dcplib.component_agents.analysis_agent import AnalysisAgent
 
 
-data_dir = f'{Path(os.path.split(__file__)[0]).absolute()}/data/'
+data_dir = '{}/data/'.format(Path(os.path.split(__file__)[0]).absolute())
 
 
 @unittest.skipIf(sys.version_info < (3, 6), "Only testing under Python 3.6+")
 class TestAnalysisAgent(unittest.TestCase):
     def setUp(self):
-        with open(f"{data_dir}workflow_response/simple_query_results.json") as f:
+        with open("{}workflow_response/simple_query_results.json".format(data_dir)) as f:
             self.simple_workflow_response = json.load(f)
 
-        with open(f"{data_dir}workflow_response/complex_query_results.json") as f:
+        with open("{}workflow_response/complex_query_results.json".format(data_dir)) as f:
             self.complex_workflow_response = json.load(f)
 
     def test_analysis_agent_raises_exception_when_no_deployment_specified(self):
