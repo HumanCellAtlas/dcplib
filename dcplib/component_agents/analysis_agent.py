@@ -37,6 +37,7 @@ class AnalysisAgent:
         :return result: A list of workflow metadata blocks that matched the query.
         """
         # to only query within the collection that associated with the current deployment
+        query_dict['label'] = {}
         query_dict['label']['caas-collection-name'] = self.cromwell_collection
 
         response = cromwell_tools.api.query(
